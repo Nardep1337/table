@@ -1,5 +1,5 @@
 //@version=5
-indicator("Multi-TF Checklist (RSI + StochRSI + Momentum + SuperTrend + BBVol + CMF + Hurst)", overlay=true, max_lines_count=500, max_labels_count=500, dynamic_requests=true)
+indicator("Multi-TF Checklist (RSI + StochRSI + Momentum + SuperTrend + BBVol + CMF + Hurst)", overlay=true, max_lines_count=500, max_labels_count=500, dynamic_requests=true, calc_on_every_tick=true)
 
 // === Inputs ===
 rsiLength    = input.int(14, "RSI Length")
@@ -13,6 +13,15 @@ bbMult       = input.float(2.0, "BB StdDev")
 cmfLength    = input.int(20, "CMF Length")
 hurstLen     = input.int(200, "Hurst Lookback", minval=50)
 table_pos    = input.string("Top Right", "Table Position", options=["Top Right", "Top Left", "Bottom Right", "Bottom Left"])
+
+// Signals on chart
+showSignals  = input.bool(true, "Show Chart Signals")
+minAgree     = input.int(3, "Min Timeframes Agree", minval=1, maxval=5)
+useTF1       = input.bool(true, "Use 1M")
+useTF5       = input.bool(true, "Use 5M")
+useTF15      = input.bool(true, "Use 15M")
+useTF60      = input.bool(true, "Use 1H")
+useTF240     = input.bool(true, "Use 4H")
 
 // === Functions ===
 // StochRSI %K
@@ -89,94 +98,90 @@ f_draw_row(tf_label, rsi, stoch, mom, supert, highvol, cmf, hurst, score, signal
     table.cell(t, 8, row, str.tostring(score, "#"), text_color = score > 0 ? color.green : score < 0 ? color.red : color.gray)
     table.cell(t, 9, row, signal,text_color = signal == "BUY" ? color.green : signal == "SELL" ? color.red : color.orange,bgcolor    = signal == "BUY" ? color.new(color.green, 85) : signal == "SELL" ? color.new(color.red, 85) : color.new(color.orange, 85))
 
+// === MTF signals for chart plotting ===
+// Compute per-timeframe signals as series so we can trigger shapes on consensus
+var string _tf1 = "1"
+var string _tf5 = "5"
+var string _tf15 = "15"
+var string _tf60 = "60"
+var string _tf240 = "240"
+
+rsi1     = request.security(syminfo.tickerid, _tf1, ta.rsi(close, rsiLength), barmerge.gaps_off, barmerge.lookahead_on)
+stoch1   = request.security(syminfo.tickerid, _tf1, f_stochrsi(), barmerge.gaps_off, barmerge.lookahead_on)
+mom1     = request.security(syminfo.tickerid, _tf1, close / close[momLength] * 100.0, barmerge.gaps_off, barmerge.lookahead_on)
+super1   = request.security(syminfo.tickerid, _tf1, f_supertrend(), barmerge.gaps_off, barmerge.lookahead_on)
+highvol1 = request.security(syminfo.tickerid, _tf1, f_highvol(), barmerge.gaps_off, barmerge.lookahead_on)
+cmf1     = request.security(syminfo.tickerid, _tf1, f_cmf(cmfLength), barmerge.gaps_off, barmerge.lookahead_on)
+hurst1   = request.security(syminfo.tickerid, _tf1, f_hurst(hurstLen), barmerge.gaps_off, barmerge.lookahead_on)
+score1   = (rsi1 < 40 ? 1 : rsi1 > 60 ? -1 : 0) + (stoch1 < 20 ? 1 : stoch1 > 80 ? -1 : 0) + (mom1 > 100 ? 1 : mom1 < 100 ? -1 : 0) + (super1 == 1 ? 1 : -1) + (cmf1 > 0 ? 1 : cmf1 < 0 ? -1 : 0) + (hurst1 > 0.55 ? 1 : hurst1 < 0.45 ? -1 : 0)
+signal1  = score1 > 2 and highvol1 ? "BUY" : score1 < -2 and highvol1 ? "SELL" : "WAIT"
+
+rsi5     = request.security(syminfo.tickerid, _tf5, ta.rsi(close, rsiLength), barmerge.gaps_off, barmerge.lookahead_on)
+stoch5   = request.security(syminfo.tickerid, _tf5, f_stochrsi(), barmerge.gaps_off, barmerge.lookahead_on)
+mom5     = request.security(syminfo.tickerid, _tf5, close / close[momLength] * 100.0, barmerge.gaps_off, barmerge.lookahead_on)
+super5   = request.security(syminfo.tickerid, _tf5, f_supertrend(), barmerge.gaps_off, barmerge.lookahead_on)
+highvol5 = request.security(syminfo.tickerid, _tf5, f_highvol(), barmerge.gaps_off, barmerge.lookahead_on)
+cmf5     = request.security(syminfo.tickerid, _tf5, f_cmf(cmfLength), barmerge.gaps_off, barmerge.lookahead_on)
+hurst5   = request.security(syminfo.tickerid, _tf5, f_hurst(hurstLen), barmerge.gaps_off, barmerge.lookahead_on)
+score5   = (rsi5 < 40 ? 1 : rsi5 > 60 ? -1 : 0) + (stoch5 < 20 ? 1 : stoch5 > 80 ? -1 : 0) + (mom5 > 100 ? 1 : mom5 < 100 ? -1 : 0) + (super5 == 1 ? 1 : -1) + (cmf5 > 0 ? 1 : cmf5 < 0 ? -1 : 0) + (hurst5 > 0.55 ? 1 : hurst5 < 0.45 ? -1 : 0)
+signal5  = score5 > 2 and highvol5 ? "BUY" : score5 < -2 and highvol5 ? "SELL" : "WAIT"
+
+rsi15     = request.security(syminfo.tickerid, _tf15, ta.rsi(close, rsiLength), barmerge.gaps_off, barmerge.lookahead_on)
+stoch15   = request.security(syminfo.tickerid, _tf15, f_stochrsi(), barmerge.gaps_off, barmerge.lookahead_on)
+mom15     = request.security(syminfo.tickerid, _tf15, close / close[momLength] * 100.0, barmerge.gaps_off, barmerge.lookahead_on)
+super15   = request.security(syminfo.tickerid, _tf15, f_supertrend(), barmerge.gaps_off, barmerge.lookahead_on)
+highvol15 = request.security(syminfo.tickerid, _tf15, f_highvol(), barmerge.gaps_off, barmerge.lookahead_on)
+cmf15     = request.security(syminfo.tickerid, _tf15, f_cmf(cmfLength), barmerge.gaps_off, barmerge.lookahead_on)
+hurst15   = request.security(syminfo.tickerid, _tf15, f_hurst(hurstLen), barmerge.gaps_off, barmerge.lookahead_on)
+score15   = (rsi15 < 40 ? 1 : rsi15 > 60 ? -1 : 0) + (stoch15 < 20 ? 1 : stoch15 > 80 ? -1 : 0) + (mom15 > 100 ? 1 : mom15 < 100 ? -1 : 0) + (super15 == 1 ? 1 : -1) + (cmf15 > 0 ? 1 : cmf15 < 0 ? -1 : 0) + (hurst15 > 0.55 ? 1 : hurst15 < 0.45 ? -1 : 0)
+signal15  = score15 > 2 and highvol15 ? "BUY" : score15 < -2 and highvol15 ? "SELL" : "WAIT"
+
+rsi1h     = request.security(syminfo.tickerid, _tf60, ta.rsi(close, rsiLength), barmerge.gaps_off, barmerge.lookahead_on)
+stoch1h   = request.security(syminfo.tickerid, _tf60, f_stochrsi(), barmerge.gaps_off, barmerge.lookahead_on)
+mom1h     = request.security(syminfo.tickerid, _tf60, close / close[momLength] * 100.0, barmerge.gaps_off, barmerge.lookahead_on)
+super1h   = request.security(syminfo.tickerid, _tf60, f_supertrend(), barmerge.gaps_off, barmerge.lookahead_on)
+highvol1h = request.security(syminfo.tickerid, _tf60, f_highvol(), barmerge.gaps_off, barmerge.lookahead_on)
+cmf1h     = request.security(syminfo.tickerid, _tf60, f_cmf(cmfLength), barmerge.gaps_off, barmerge.lookahead_on)
+hurst1h   = request.security(syminfo.tickerid, _tf60, f_hurst(hurstLen), barmerge.gaps_off, barmerge.lookahead_on)
+score1h   = (rsi1h < 40 ? 1 : rsi1h > 60 ? -1 : 0) + (stoch1h < 20 ? 1 : stoch1h > 80 ? -1 : 0) + (mom1h > 100 ? 1 : mom1h < 100 ? -1 : 0) + (super1h == 1 ? 1 : -1) + (cmf1h > 0 ? 1 : cmf1h < 0 ? -1 : 0) + (hurst1h > 0.55 ? 1 : hurst1h < 0.45 ? -1 : 0)
+signal1h  = score1h > 2 and highvol1h ? "BUY" : score1h < -2 and highvol1h ? "SELL" : "WAIT"
+
+rsi4h     = request.security(syminfo.tickerid, _tf240, ta.rsi(close, rsiLength), barmerge.gaps_off, barmerge.lookahead_on)
+stoch4h   = request.security(syminfo.tickerid, _tf240, f_stochrsi(), barmerge.gaps_off, barmerge.lookahead_on)
+mom4h     = request.security(syminfo.tickerid, _tf240, close / close[momLength] * 100.0, barmerge.gaps_off, barmerge.lookahead_on)
+super4h   = request.security(syminfo.tickerid, _tf240, f_supertrend(), barmerge.gaps_off, barmerge.lookahead_on)
+highvol4h = request.security(syminfo.tickerid, _tf240, f_highvol(), barmerge.gaps_off, barmerge.lookahead_on)
+cmf4h     = request.security(syminfo.tickerid, _tf240, f_cmf(cmfLength), barmerge.gaps_off, barmerge.lookahead_on)
+hurst4h   = request.security(syminfo.tickerid, _tf240, f_hurst(hurstLen), barmerge.gaps_off, barmerge.lookahead_on)
+score4h   = (rsi4h < 40 ? 1 : rsi4h > 60 ? -1 : 0) + (stoch4h < 20 ? 1 : stoch4h > 80 ? -1 : 0) + (mom4h > 100 ? 1 : mom4h < 100 ? -1 : 0) + (super4h == 1 ? 1 : -1) + (cmf4h > 0 ? 1 : cmf4h < 0 ? -1 : 0) + (hurst4h > 0.55 ? 1 : hurst4h < 0.45 ? -1 : 0)
+signal4h  = score4h > 2 and highvol4h ? "BUY" : score4h < -2 and highvol4h ? "SELL" : "WAIT"
+
+buy1 = signal1 == "BUY"
+sell1 = signal1 == "SELL"
+buy5 = signal5 == "BUY"
+sell5 = signal5 == "SELL"
+buy15 = signal15 == "BUY"
+sell15 = signal15 == "SELL"
+buy1h = signal1h == "BUY"
+sell1h = signal1h == "SELL"
+buy4h = signal4h == "BUY"
+sell4h = signal4h == "SELL"
+
+agreeBuy = (useTF1 ? (buy1 ? 1 : 0) : 0) + (useTF5 ? (buy5 ? 1 : 0) : 0) + (useTF15 ? (buy15 ? 1 : 0) : 0) + (useTF60 ? (buy1h ? 1 : 0) : 0) + (useTF240 ? (buy4h ? 1 : 0) : 0)
+agreeSell = (useTF1 ? (sell1 ? 1 : 0) : 0) + (useTF5 ? (sell5 ? 1 : 0) : 0) + (useTF15 ? (sell15 ? 1 : 0) : 0) + (useTF60 ? (sell1h ? 1 : 0) : 0) + (useTF240 ? (sell4h ? 1 : 0) : 0)
+
+buyConsensus = showSignals and agreeBuy >= minAgree
+sellConsensus = showSignals and agreeSell >= minAgree
+
+buyTrig = buyConsensus and not buyConsensus[1]
+sellTrig = sellConsensus and not sellConsensus[1]
+
+plotshape(buyTrig, title="MTF BUY", location=location.belowbar, color=color.new(color.lime, 0), style=shape.triangleup, size=size.tiny, text="BUY " + str.tostring(agreeBuy))
+plotshape(sellTrig, title="MTF SELL", location=location.abovebar, color=color.new(color.red, 0), style=shape.triangledown, size=size.tiny, text="SELL " + str.tostring(agreeSell))
+
 if barstate.islast
-    string tf = ""
-    // === 1M ===
-    tf := "1"
-    rsi1     = request.security(syminfo.tickerid, tf, ta.rsi(close, rsiLength))
-    stoch1   = request.security(syminfo.tickerid, tf, f_stochrsi())
-    mom1     = request.security(syminfo.tickerid, tf, close / close[momLength] * 100.0)
-    super1   = request.security(syminfo.tickerid, tf, f_supertrend())
-    highvol1 = request.security(syminfo.tickerid, tf, f_highvol())
-    cmf1     = request.security(syminfo.tickerid, tf, f_cmf(cmfLength))
-    hurst1   = request.security(syminfo.tickerid, tf, f_hurst(hurstLen))
-    score1 = (rsi1 < 40 ? 1 : rsi1 > 60 ? -1 : 0) +
-             (stoch1 < 20 ? 1 : stoch1 > 80 ? -1 : 0) +
-             (mom1 > 100 ? 1 : mom1 < 100 ? -1 : 0) +
-             (super1 == 1 ? 1 : -1) +
-             (cmf1 > 0 ? 1 : cmf1 < 0 ? -1 : 0) +
-             (hurst1 > 0.55 ? 1 : hurst1 < 0.45 ? -1 : 0)
-    signal1 = score1 > 2 and highvol1 ? "BUY" : score1 < -2 and highvol1 ? "SELL" : "WAIT"
     f_draw_row("1M", rsi1, stoch1, mom1, super1, highvol1, cmf1, hurst1, score1, signal1, 1)
-
-    // === 5M ===
-    tf := "5"
-    rsi5     = request.security(syminfo.tickerid, tf, ta.rsi(close, rsiLength))
-    stoch5   = request.security(syminfo.tickerid, tf, f_stochrsi())
-    mom5     = request.security(syminfo.tickerid, tf, close / close[momLength] * 100.0)
-    super5   = request.security(syminfo.tickerid, tf, f_supertrend())
-    highvol5 = request.security(syminfo.tickerid, tf, f_highvol())
-    cmf5     = request.security(syminfo.tickerid, tf, f_cmf(cmfLength))
-    hurst5   = request.security(syminfo.tickerid, tf, f_hurst(hurstLen))
-    score5 = (rsi5 < 40 ? 1 : rsi5 > 60 ? -1 : 0) +
-             (stoch5 < 20 ? 1 : stoch5 > 80 ? -1 : 0) +
-             (mom5 > 100 ? 1 : mom5 < 100 ? -1 : 0) +
-             (super5 == 1 ? 1 : -1) +
-             (cmf5 > 0 ? 1 : cmf5 < 0 ? -1 : 0) +
-             (hurst5 > 0.55 ? 1 : hurst5 < 0.45 ? -1 : 0)
-    signal5 = score5 > 2 and highvol5 ? "BUY" : score5 < -2 and highvol5 ? "SELL" : "WAIT"
     f_draw_row("5M", rsi5, stoch5, mom5, super5, highvol5, cmf5, hurst5, score5, signal5, 2)
-
-    // === 15M ===
-    tf := "15"
-    rsi15     = request.security(syminfo.tickerid, tf, ta.rsi(close, rsiLength))
-    stoch15   = request.security(syminfo.tickerid, tf, f_stochrsi())
-    mom15     = request.security(syminfo.tickerid, tf, close / close[momLength] * 100.0)
-    super15   = request.security(syminfo.tickerid, tf, f_supertrend())
-    highvol15 = request.security(syminfo.tickerid, tf, f_highvol())
-    cmf15     = request.security(syminfo.tickerid, tf, f_cmf(cmfLength))
-    hurst15   = request.security(syminfo.tickerid, tf, f_hurst(hurstLen))
-    score15 = (rsi15 < 40 ? 1 : rsi15 > 60 ? -1 : 0) +
-              (stoch15 < 20 ? 1 : stoch15 > 80 ? -1 : 0) +
-              (mom15 > 100 ? 1 : mom15 < 100 ? -1 : 0) +
-              (super15 == 1 ? 1 : -1) +
-              (cmf15 > 0 ? 1 : cmf15 < 0 ? -1 : 0) +
-              (hurst15 > 0.55 ? 1 : hurst15 < 0.45 ? -1 : 0)
-    signal15 = score15 > 2 and highvol15 ? "BUY" : score15 < -2 and highvol15 ? "SELL" : "WAIT"
     f_draw_row("15M", rsi15, stoch15, mom15, super15, highvol15, cmf15, hurst15, score15, signal15, 3)
-
-    // === 1H ===
-    tf := "60"
-    rsi1h     = request.security(syminfo.tickerid, tf, ta.rsi(close, rsiLength))
-    stoch1h   = request.security(syminfo.tickerid, tf, f_stochrsi())
-    mom1h     = request.security(syminfo.tickerid, tf, close / close[momLength] * 100.0)
-    super1h   = request.security(syminfo.tickerid, tf, f_supertrend())
-    highvol1h = request.security(syminfo.tickerid, tf, f_highvol())
-    cmf1h     = request.security(syminfo.tickerid, tf, f_cmf(cmfLength))
-    hurst1h   = request.security(syminfo.tickerid, tf, f_hurst(hurstLen))
-    score1h = (rsi1h < 40 ? 1 : rsi1h > 60 ? -1 : 0) +
-              (stoch1h < 20 ? 1 : stoch1h > 80 ? -1 : 0) +
-              (mom1h > 100 ? 1 : mom1h < 100 ? -1 : 0) +
-              (super1h == 1 ? 1 : -1) +
-              (cmf1h > 0 ? 1 : cmf1h < 0 ? -1 : 0) +
-              (hurst1h > 0.55 ? 1 : hurst1h < 0.45 ? -1 : 0)
-    signal1h = score1h > 2 and highvol1h ? "BUY" : score1h < -2 and highvol1h ? "SELL" : "WAIT"
     f_draw_row("1H", rsi1h, stoch1h, mom1h, super1h, highvol1h, cmf1h, hurst1h, score1h, signal1h, 4)
-
-    // === 4H ===
-    tf := "240"
-    rsi4h     = request.security(syminfo.tickerid, tf, ta.rsi(close, rsiLength))
-    stoch4h   = request.security(syminfo.tickerid, tf, f_stochrsi())
-    mom4h     = request.security(syminfo.tickerid, tf, close / close[momLength] * 100.0)
-    super4h   = request.security(syminfo.tickerid, tf, f_supertrend())
-    highvol4h = request.security(syminfo.tickerid, tf, f_highvol())
-    cmf4h     = request.security(syminfo.tickerid, tf, f_cmf(cmfLength))
-    hurst4h   = request.security(syminfo.tickerid, tf, f_hurst(hurstLen))
-    score4h = (rsi4h < 40 ? 1 : rsi4h > 60 ? -1 : 0) +
-              (stoch4h < 20 ? 1 : stoch4h > 80 ? -1 : 0) +
-              (mom4h > 100 ? 1 : mom4h < 100 ? -1 : 0) +
-              (super4h == 1 ? 1 : -1) +
-              (cmf4h > 0 ? 1 : cmf4h < 0 ? -1 : 0) +
-              (hurst4h > 0.55 ? 1 : hurst4h < 0.45 ? -1 : 0)
-    signal4h = score4h > 2 and highvol4h ? "BUY" : score4h < -2 and highvol4h ? "SELL" : "WAIT"
     f_draw_row("4H", rsi4h, stoch4h, mom4h, super4h, highvol4h, cmf4h, hurst4h, score4h, signal4h, 5)
