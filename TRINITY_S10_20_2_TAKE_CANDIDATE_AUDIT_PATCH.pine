@@ -307,6 +307,8 @@ bool strategyUseCausalRiskSurface = input.bool(true, "Causal risk surface", grou
      tooltip = "Keeps the complete signal stream and original exits. Only exposure changes: fragile confidence zones and SELL EVE signals opposing the completed-HTF regime receive convexly compressed risk instead of being deleted.")
 float strategyRiskSurfaceFloor = input.float(0.10, "Risk-surface minimum multiplier", minval = 0.05, maxval = 0.80, step = 0.05, group = G_RISK,
      tooltip = "S10.7 default. The supplied 96-trade audit found X<=0.30 expectancy below one while X=1.00 retained PF above two. A 0.10 floor preserves every trade and its original exit while reducing the weak tail.")
+float strategyMinRiskSurfaceScale = input.float(0.30, "Minimum risk-surface scale to admit a trade", minval = 0.00, maxval = 1.00, step = 0.05, group = G_RISK,
+     tooltip = "Entry admission gate, separate from the floor above. A fresh 93-trade audit (2026-05-03..2026-08-23, BTCUSDT.P 15m) found the X<0.20 tail still net-negative even after the 0.10 floor: 46 trades, 60.9% win, -2.70 USD, versus 40 trades at X>=0.80 giving +71.83 USD at 87.5% win. This input skips strategy.entry entirely when the computed risk-surface scale (longRiskSurfaceScale/shortRiskSurfaceScale) falls below it, instead of only shrinking size. It changes nothing about signal generation, SL/TP or the position-size formula for admitted trades. Set to 0.00 to reproduce the prior no-gate behaviour exactly.")
 float strategyLongFragileCeiling = input.float(0.27, "LONG fragile allocation ceiling", minval = 0.20, maxval = 0.50, step = 0.01, group = G_RISK)
 float strategyLongFragileWidth = input.float(0.10, "LONG fragile transition width", minval = 0.02, maxval = 0.30, step = 0.01, group = G_RISK)
 float strategyShortUncertaintyCenter = input.float(0.63, "SHORT uncertainty center", minval = 0.35, maxval = 0.90, step = 0.01, group = G_RISK)
@@ -4121,90 +4123,92 @@ strategyTakeCandidateAudit.resolve(
 if barstate.isconfirmed
     if strategyExecuteBuySignal and strategyCanBuy
         [longLogicalDistance, longHardDistance, longTargetDistance, longExtendedDistance, longObstacleLimited, longCapitalScale, longRiskSurfaceScale, longQty] = buildLongTradePlan(strategyExecuteBuyRoute, strategyExecuteBuyQuality, strategyDeferredBuyPulse)
-        bool longDirectEveTiming = strategyExecuteBuyRoute == 10 and not strategyDeferredBuyPulse
-        [longTimingExtremeLag, longTimingArmLag, longTimingDecayLag, longTimingDefenseLag, longTimingDisplacementAtr, longTimingLeadBars, longTimingLeadEdgeAtr, longTimingLeadScore] = buildLongTiming(strategyTakeBuyPulse, longDirectEveTiming)
-        strategyTimingExtremeLag := longTimingExtremeLag
-        strategyTimingArmLag := longTimingArmLag
-        strategyTimingDecayLag := longTimingDecayLag
-        strategyTimingDefenseLag := longTimingDefenseLag
-        strategyTimingDisplacementAtr := longTimingDisplacementAtr
-        strategyTimingLeadBars := longTimingLeadBars
-        strategyTimingLeadEdgeAtr := longTimingLeadEdgeAtr
-        strategyTimingLeadScore := longTimingLeadScore
-        strategyTradeDirection := 1
-        strategyTradeRoute := strategyExecuteBuyRoute
-        strategyEntryBar := bar_index
-        strategyLastEntrySignalBar := bar_index
-        strategyLogicalBreakStreak := 0
-        strategyInvalidationActive := false
-        strategyInvalidationEvidence := 0.0
-        strategyTargetExtended := false
-        strategyBaseTargetTouched := false
-        strategyTargetExtensionAllowed := not longObstacleLimited and longExtendedDistance > longTargetDistance + syminfo.mintick
-        strategyMaxFavorableProgress := 0.0
-        strategyLaunchFailureStreak := 0
-        strategyEntryPrice := close
-        strategyEntryAtr := strategySignalAtr
-        strategyLogicalDistance := longLogicalDistance
-        strategyHardDistance := longHardDistance
-        strategyLogicalStop := close - longLogicalDistance
-        strategyHardStop := close - longHardDistance
-        strategyBaseTargetDistance := longTargetDistance
-        strategyExtendedTargetDistance := longExtendedDistance
-        strategyTargetDistance := longTargetDistance
-        strategyBaseTarget := close + longTargetDistance
-        strategyExtendedTarget := close + longExtendedDistance
-        strategyTarget := strategyBaseTarget
-        if strategyDeferredBuyPulse
-            strategyDeferredBuyEntries += 1
-            label.new(bar_index, low, "BUY " + routeName(strategyExecuteBuyRoute) + "-G\nR " + str.tostring(strategyDeferredBuyProof, "#.00"), yloc = yloc.belowbar, style = label.style_label_up, color = color.new(bull, 15), textcolor = color.white, size = size.small)
-        if strategyTakeBuyPulse
-            strategyTakeBuyAdmission.auditExecution(true, eventTelemetry.bottom, atr)
-            strategyTakeBuyAdmission.consume(bottomEve.armBar)
-            label.new(bar_index, low, "BUY EVE-TAKE EARLY\nH " + str.tostring(strategyExecuteBuyQuality, "#.0"), yloc = yloc.belowbar, style = label.style_label_up, color = color.new(bull, 58), textcolor = color.white, size = size.small)
-        strategy.entry("LONG", strategy.long, qty = longQty, comment = "BUY " + routeName(strategyExecuteBuyRoute) + (strategyTakeBuyPulse ? "-T" : strategyDeferredBuyPulse ? "-G" : "") + " A" + str.tostring(longCapitalScale, "#.00") + " X" + str.tostring(longRiskSurfaceScale, "#.00") + " H" + str.tostring(strategyExecuteBuyQuality, "#.0") + " R" + str.tostring(strategyRegimeScore, "#.00"))
+        if longRiskSurfaceScale >= strategyMinRiskSurfaceScale
+            bool longDirectEveTiming = strategyExecuteBuyRoute == 10 and not strategyDeferredBuyPulse
+            [longTimingExtremeLag, longTimingArmLag, longTimingDecayLag, longTimingDefenseLag, longTimingDisplacementAtr, longTimingLeadBars, longTimingLeadEdgeAtr, longTimingLeadScore] = buildLongTiming(strategyTakeBuyPulse, longDirectEveTiming)
+            strategyTimingExtremeLag := longTimingExtremeLag
+            strategyTimingArmLag := longTimingArmLag
+            strategyTimingDecayLag := longTimingDecayLag
+            strategyTimingDefenseLag := longTimingDefenseLag
+            strategyTimingDisplacementAtr := longTimingDisplacementAtr
+            strategyTimingLeadBars := longTimingLeadBars
+            strategyTimingLeadEdgeAtr := longTimingLeadEdgeAtr
+            strategyTimingLeadScore := longTimingLeadScore
+            strategyTradeDirection := 1
+            strategyTradeRoute := strategyExecuteBuyRoute
+            strategyEntryBar := bar_index
+            strategyLastEntrySignalBar := bar_index
+            strategyLogicalBreakStreak := 0
+            strategyInvalidationActive := false
+            strategyInvalidationEvidence := 0.0
+            strategyTargetExtended := false
+            strategyBaseTargetTouched := false
+            strategyTargetExtensionAllowed := not longObstacleLimited and longExtendedDistance > longTargetDistance + syminfo.mintick
+            strategyMaxFavorableProgress := 0.0
+            strategyLaunchFailureStreak := 0
+            strategyEntryPrice := close
+            strategyEntryAtr := strategySignalAtr
+            strategyLogicalDistance := longLogicalDistance
+            strategyHardDistance := longHardDistance
+            strategyLogicalStop := close - longLogicalDistance
+            strategyHardStop := close - longHardDistance
+            strategyBaseTargetDistance := longTargetDistance
+            strategyExtendedTargetDistance := longExtendedDistance
+            strategyTargetDistance := longTargetDistance
+            strategyBaseTarget := close + longTargetDistance
+            strategyExtendedTarget := close + longExtendedDistance
+            strategyTarget := strategyBaseTarget
+            if strategyDeferredBuyPulse
+                strategyDeferredBuyEntries += 1
+                label.new(bar_index, low, "BUY " + routeName(strategyExecuteBuyRoute) + "-G\nR " + str.tostring(strategyDeferredBuyProof, "#.00"), yloc = yloc.belowbar, style = label.style_label_up, color = color.new(bull, 15), textcolor = color.white, size = size.small)
+            if strategyTakeBuyPulse
+                strategyTakeBuyAdmission.auditExecution(true, eventTelemetry.bottom, atr)
+                strategyTakeBuyAdmission.consume(bottomEve.armBar)
+                label.new(bar_index, low, "BUY EVE-TAKE EARLY\nH " + str.tostring(strategyExecuteBuyQuality, "#.0"), yloc = yloc.belowbar, style = label.style_label_up, color = color.new(bull, 58), textcolor = color.white, size = size.small)
+            strategy.entry("LONG", strategy.long, qty = longQty, comment = "BUY " + routeName(strategyExecuteBuyRoute) + (strategyTakeBuyPulse ? "-T" : strategyDeferredBuyPulse ? "-G" : "") + " A" + str.tostring(longCapitalScale, "#.00") + " X" + str.tostring(longRiskSurfaceScale, "#.00") + " H" + str.tostring(strategyExecuteBuyQuality, "#.0") + " R" + str.tostring(strategyRegimeScore, "#.00"))
     if strategyExecuteSellSignal and strategyCanSell
         [shortLogicalDistance, shortHardDistance, shortTargetDistance, shortExtendedDistance, shortObstacleLimited, shortCapitalScale, shortRiskSurfaceScale, shortQty] = buildShortTradePlan(strategyExecuteSellRoute, strategyExecuteSellQuality, strategyDeferredSellPulse)
-        bool shortDirectEveTiming = strategyExecuteSellRoute == 10 and not strategyDeferredSellPulse
-        [shortTimingExtremeLag, shortTimingArmLag, shortTimingDecayLag, shortTimingDefenseLag, shortTimingDisplacementAtr, shortTimingLeadBars, shortTimingLeadEdgeAtr, shortTimingLeadScore] = buildShortTiming(shortDirectEveTiming)
-        strategyTimingExtremeLag := shortTimingExtremeLag
-        strategyTimingArmLag := shortTimingArmLag
-        strategyTimingDecayLag := shortTimingDecayLag
-        strategyTimingDefenseLag := shortTimingDefenseLag
-        strategyTimingDisplacementAtr := shortTimingDisplacementAtr
-        strategyTimingLeadBars := shortTimingLeadBars
-        strategyTimingLeadEdgeAtr := shortTimingLeadEdgeAtr
-        strategyTimingLeadScore := shortTimingLeadScore
-        strategyTradeDirection := -1
-        strategyTradeRoute := strategyExecuteSellRoute
-        strategyEntryBar := bar_index
-        strategyLastEntrySignalBar := bar_index
-        strategyLogicalBreakStreak := 0
-        strategyInvalidationActive := false
-        strategyInvalidationEvidence := 0.0
-        strategyTargetExtended := false
-        strategyBaseTargetTouched := false
-        strategyTargetExtensionAllowed := not shortObstacleLimited and shortExtendedDistance > shortTargetDistance + syminfo.mintick
-        strategyMaxFavorableProgress := 0.0
-        strategyLaunchFailureStreak := 0
-        strategyEntryPrice := close
-        strategyEntryAtr := strategySignalAtr
-        strategyLogicalDistance := shortLogicalDistance
-        strategyHardDistance := shortHardDistance
-        strategyLogicalStop := close + shortLogicalDistance
-        strategyHardStop := close + shortHardDistance
-        strategyBaseTargetDistance := shortTargetDistance
-        strategyExtendedTargetDistance := shortExtendedDistance
-        strategyTargetDistance := shortTargetDistance
-        strategyBaseTarget := close - shortTargetDistance
-        strategyExtendedTarget := close - shortExtendedDistance
-        strategyTarget := strategyBaseTarget
-        if strategyDeferredSellPulse
-            strategyDeferredSellEntries += 1
-            label.new(bar_index, high, "SELL " + routeName(strategyExecuteSellRoute) + "-G\nR " + str.tostring(strategyDeferredSellProof, "#.00"), yloc = yloc.abovebar, style = label.style_label_down, color = color.new(bear, 15), textcolor = color.white, size = size.small)
-        if strategyFlatLeadSellPulse and strategyShowFlatLeadSell
-            label.new(bar_index, high, "FLAT LEAD SELL\nQ " + str.tostring(strategyExecuteSellQuality, "#.0"), yloc = yloc.abovebar, style = label.style_label_down, color = color.new(#9AA4B2, 35), textcolor = color.white, size = size.tiny)
-        strategy.entry("SHORT", strategy.short, qty = shortQty, comment = "SELL " + routeName(strategyExecuteSellRoute) + (strategyFlatLeadSellPulse ? "-F" : strategyDeferredSellPulse ? "-G" : "") + " A" + str.tostring(shortCapitalScale, "#.00") + " X" + str.tostring(shortRiskSurfaceScale, "#.00") + " H" + str.tostring(strategyExecuteSellQuality, "#.0") + " R" + str.tostring(strategyRegimeScore, "#.00") + " T" + str.tostring(strategyExecuteSellTransition, "#.00"))
+        if shortRiskSurfaceScale >= strategyMinRiskSurfaceScale
+            bool shortDirectEveTiming = strategyExecuteSellRoute == 10 and not strategyDeferredSellPulse
+            [shortTimingExtremeLag, shortTimingArmLag, shortTimingDecayLag, shortTimingDefenseLag, shortTimingDisplacementAtr, shortTimingLeadBars, shortTimingLeadEdgeAtr, shortTimingLeadScore] = buildShortTiming(shortDirectEveTiming)
+            strategyTimingExtremeLag := shortTimingExtremeLag
+            strategyTimingArmLag := shortTimingArmLag
+            strategyTimingDecayLag := shortTimingDecayLag
+            strategyTimingDefenseLag := shortTimingDefenseLag
+            strategyTimingDisplacementAtr := shortTimingDisplacementAtr
+            strategyTimingLeadBars := shortTimingLeadBars
+            strategyTimingLeadEdgeAtr := shortTimingLeadEdgeAtr
+            strategyTimingLeadScore := shortTimingLeadScore
+            strategyTradeDirection := -1
+            strategyTradeRoute := strategyExecuteSellRoute
+            strategyEntryBar := bar_index
+            strategyLastEntrySignalBar := bar_index
+            strategyLogicalBreakStreak := 0
+            strategyInvalidationActive := false
+            strategyInvalidationEvidence := 0.0
+            strategyTargetExtended := false
+            strategyBaseTargetTouched := false
+            strategyTargetExtensionAllowed := not shortObstacleLimited and shortExtendedDistance > shortTargetDistance + syminfo.mintick
+            strategyMaxFavorableProgress := 0.0
+            strategyLaunchFailureStreak := 0
+            strategyEntryPrice := close
+            strategyEntryAtr := strategySignalAtr
+            strategyLogicalDistance := shortLogicalDistance
+            strategyHardDistance := shortHardDistance
+            strategyLogicalStop := close + shortLogicalDistance
+            strategyHardStop := close + shortHardDistance
+            strategyBaseTargetDistance := shortTargetDistance
+            strategyExtendedTargetDistance := shortExtendedDistance
+            strategyTargetDistance := shortTargetDistance
+            strategyBaseTarget := close - shortTargetDistance
+            strategyExtendedTarget := close - shortExtendedDistance
+            strategyTarget := strategyBaseTarget
+            if strategyDeferredSellPulse
+                strategyDeferredSellEntries += 1
+                label.new(bar_index, high, "SELL " + routeName(strategyExecuteSellRoute) + "-G\nR " + str.tostring(strategyDeferredSellProof, "#.00"), yloc = yloc.abovebar, style = label.style_label_down, color = color.new(bear, 15), textcolor = color.white, size = size.small)
+            if strategyFlatLeadSellPulse and strategyShowFlatLeadSell
+                label.new(bar_index, high, "FLAT LEAD SELL\nQ " + str.tostring(strategyExecuteSellQuality, "#.0"), yloc = yloc.abovebar, style = label.style_label_down, color = color.new(#9AA4B2, 35), textcolor = color.white, size = size.tiny)
+            strategy.entry("SHORT", strategy.short, qty = shortQty, comment = "SELL " + routeName(strategyExecuteSellRoute) + (strategyFlatLeadSellPulse ? "-F" : strategyDeferredSellPulse ? "-G" : "") + " A" + str.tostring(shortCapitalScale, "#.00") + " X" + str.tostring(shortRiskSurfaceScale, "#.00") + " H" + str.tostring(strategyExecuteSellQuality, "#.0") + " R" + str.tostring(strategyRegimeScore, "#.00") + " T" + str.tostring(strategyExecuteSellTransition, "#.00"))
 bool strategyNewLongFill = strategy.position_size > 0 and nz(strategy.position_size[1]) <= 0
 bool strategyNewShortFill = strategy.position_size < 0 and nz(strategy.position_size[1]) >= 0
 if strategyNewLongFill and strategyTradeDirection == 1
