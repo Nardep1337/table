@@ -69,6 +69,8 @@ int fliAtrLen     = input.int(10, "ATR trailing length", minval = 1, group = G_F
 float fliAtrMult  = input.float(1.0, "ATR trailing multiplier", minval = 0.0, step = 0.1, group = G_FLI)
 int exLen         = input.int(14, "Composite length", minval = 5, group = G_EX)
 int exSmooth      = input.int(3, "Composite smoothing", minval = 1, maxval = 10, group = G_EX)
+int exStochSmooth = input.int(3, "Raw %K smoothing (slow stochastic)", minval = 1, maxval = 10, group = G_EX,
+     tooltip = "stochScore previously used ta.stoch() raw %K unsmoothed (the noisiest of the 4 composite components, 25% weight) while rsiScore/flowScore/stretchScore are each smoother by construction, then the whole composite is EMA-smoothed again (exSmooth). This applies the standard slow-stochastic 3-bar SMA to %K before it enters the composite, matching the smoothing convention already used for StochRSI elsewhere. Set to 1 to reproduce the prior raw-%K behaviour exactly.")
 float exLowBase   = input.float(24.0, "Base oversold", minval = 5.0, maxval = 40.0, step = 1.0, group = G_EX)
 float exHighBase  = input.float(76.0, "Base overbought", minval = 60.0, maxval = 95.0, step = 1.0, group = G_EX)
 float exRecovery  = input.float(8.0, "Recovery from extreme", minval = 2.0, maxval = 25.0, step = 1.0, group = G_EX)
@@ -1193,7 +1195,7 @@ float atrRatio = atrBase > 0 ? atr / atrBase : 1.0
 float volumeBase = nz(ta.sma(volume, 30), volume)
 float volumeRatio = not na(volume) and volumeBase > 0 ? volume / volumeBase : 1.0
 float rsiScore = nz(ta.rsi(close, exLen), 50.0)
-float stochScore = nz(ta.stoch(close, high, low, exLen), 50.0)
+float stochScore = nz(ta.sma(ta.stoch(close, high, low, exLen), exStochSmooth), 50.0)
 float mfiValue = ta.mfi(hlc3, exLen)
 float flowScore = na(mfiValue) ? rsiScore : mfiValue
 float fairValue = ta.ema(close, exLen)
