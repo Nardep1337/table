@@ -221,8 +221,6 @@ string timeZone   = input.string("GMT+7", "Timing timezone", group = G_TIME)
 int timingTol     = input.int(1, "Minute tolerance", minval = 0, maxval = 3, group = G_TIME)
 float timingBonus = input.float(5.0, "Soft timing bonus", minval = 0.0, maxval = 15.0, step = 1.0, group = G_TIME)
 bool showRail     = input.bool(true, "Show Kalman rail", group = G_VIS)
-bool showFLI      = input.bool(true, "Show FLI trail", group = G_VIS)
-bool showStructure = input.bool(true, "Show confirmed structural levels", group = G_VIS)
 bool colorBars    = input.bool(false, "Color bars by fast trend", group = G_VIS)
 bool showDash     = input.bool(true, "Show diagnostic dashboard", group = G_VIS)
 bool showLeadDash = input.bool(true, "Show LEAD shadow dashboard", group = G_VIS, tooltip = "Independent telemetry panel. It does not participate in BUY/SELL execution.")
@@ -3457,11 +3455,6 @@ color bear = #D84A7F
 color neutral = #9AA0AA
 color railColor = fastLeg == 1 ? bull : fastLeg == -1 ? bear : neutral
 plot(showRail ? fastRail : na, "Kalman-Ratchet Rail", railColor, 2)
-plot(showFLI ? fliLine : na, "Confirmed FLI", fliDir == 1 ? color.new(bull, 20) : fliDir == -1 ? color.new(bear, 20) : neutral, 2, plot.style_linebr)
-plot(showStructure ? resistanceTop : na, "Resistance Zone Top", color.new(bear, 35), 1, plot.style_stepline)
-plot(showStructure ? resistanceBottom : na, "Resistance Zone Bottom", color.new(bear, 72), 1, plot.style_stepline)
-plot(showStructure ? supportTop : na, "Support Zone Top", color.new(bull, 72), 1, plot.style_stepline)
-plot(showStructure ? supportBottom : na, "Support Zone Bottom", color.new(bull, 35), 1, plot.style_stepline)
 barcolor(colorBars ? color.new(railColor, 55) : na)
 plot(exhaustion, "Exhaustion Index", display = display.data_window)
 plot(dynamicLow, "Dynamic Oversold", display = display.data_window)
@@ -3648,17 +3641,12 @@ decayEventCsvTag() =>
       eventAuditOne("RVB", eventTelemetry.audits.reversalBuy) + eventAuditOne("RVT", eventTelemetry.audits.reversalSell) +
       eventAuditOne("TKX", strategyTakeBuyAdmission.executedAudit)
 labTag(string reason, array<float> data, float entryAtrPct) =>
-    reason + "|LAB V" + labFmt(entryAtrPct) +
-      " L2(" + labFmt(array.get(data, 0)) + "," + labFmt(array.get(data, 1)) + "," + labFmt(array.get(data, 2)) + "," + labFmt(array.get(data, 3)) + ")" +
-      " L4(" + labFmt(array.get(data, 4)) + "," + labFmt(array.get(data, 5)) + "," + labFmt(array.get(data, 6)) + "," + labFmt(array.get(data, 7)) + ")" +
-      " L8(" + labFmt(array.get(data, 8)) + "," + labFmt(array.get(data, 9)) + "," + labFmt(array.get(data, 10)) + "," + labFmt(array.get(data, 11)) + ")" +
-      " L12(" + labFmt(array.get(data, 12)) + "," + labFmt(array.get(data, 13)) + "," + labFmt(array.get(data, 14)) + "," + labFmt(array.get(data, 15)) + ")" +
-      " TIM(" + labFmt(array.get(data, 18)) + "," + labFmt(array.get(data, 19)) + "," + labFmt(array.get(data, 20)) + "," + labFmt(array.get(data, 21)) + "," + labFmt(array.get(data, 22)) + "," + labFmt(array.get(data, 23)) + "," + labFmt(array.get(data, 24)) + "," + labFmt(array.get(data, 25)) + ")" +
-      " LG(" + labFmt(array.get(data, 26)) + "," + labFmt(array.get(data, 27)) + "," + labFmt(array.get(data, 28)) + "," + labFmt(array.get(data, 29)) + "," + labFmt(array.get(data, 30)) + ")" +
-      leadShadowCsvTag() +
-      leadFunnelCsvTag() +
-      leadDisplacementCsvTag() +
-      decayEventCsvTag()
+    // Diagnostic L2/L4/L8/L12/TIM/LG/LFB/LFT/DXB/DXT/DEB/DET/TKB/TKT/RVB/RVT/TKX
+    // dump removed from the on-chart/trade-comment text (display-only cleanup).
+    // `reason` is kept verbatim: memoryWithoutTailService() (~line 3669) matches
+    // exit_comment against "TAIL RECOVERY DE-RISK" to exclude that service exit
+    // from Capital Intelligence memory, so this string must not change.
+    reason
 memoryWithoutTailService(int firstIndex, float longWin, float longLoss, float shortWin, float shortLoss) =>
     float nextLongWin = longWin
     float nextLongLoss = longLoss
