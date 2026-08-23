@@ -264,8 +264,10 @@ float strategyCatastropheRiskPct = input.float(1.50, "Maximum catastrophe risk (
 int strategyLogicalConfirmCloses = input.int(2, "Opposing-control confirmation closes", minval = 2, maxval = 4, group = G_RISK)
 int strategyLogicalGraceBars = input.int(2, "Logical SL grace bars", minval = 0, maxval = 10, group = G_RISK)
 float strategyMinInvalidationEvidenceAtr = input.float(0.30, "Accumulated invalidation evidence (ATR)", minval = 0.05, maxval = 2.0, step = 0.05, group = G_RISK)
-float strategyInvalidationControlMin = input.float(0.50, "Opposing-control threshold", minval = 0.30, maxval = 0.90, step = 0.01, group = G_RISK,
-     tooltip = "Was 0.58. SL CONTROL TRANSFER only closes once strategyLogicalConfirmCloses (=2) CONSECUTIVE bars each clear this opposing-control score - the streak resets to 0 on any bar that doesn't. In the 93-trade baseline audit (2026-05-03..2026-08-23, BTCUSDT.P 15m) the two worst SL CONTROL TRANSFER losses (-6.17 and -11.05 USD) already had adverse excursion past strategyMinInvalidationEvidenceAtr (0.30 ATR) by bar 2-4 after entry, yet did not close until bar 24 and bar 13 - the evidence threshold was not the bottleneck, the 2-consecutive-bars-at-this-control-level requirement was. Lowered from 0.58 to 0.50 to let a genuinely adverse but slightly choppy move satisfy the streak sooner. This only changes when an already-open losing trade closes - it does not touch entry admission, BUY/SELL signal generation, TP or position sizing. Re-test in Strategy Tester before assuming a dollar outcome: closing a losing trade sooner still frees the position earlier for whatever signal comes next, which changed results unpredictably the last two times an admission-side change was tried here.")
+float strategyInvalidationControlMin = input.float(0.58, "Opposing-control threshold", minval = 0.30, maxval = 0.90, step = 0.01, group = G_RISK,
+     tooltip = "Reverted to the original 0.58. A live re-test at 0.50 was checked trade-by-trade against the 93-trade baseline: it did not change either of the two target losses at all (-6.17 stayed -6.17 at bar 24, -11.05 became -11.04 at the same bar 13), and it newly cut one trade short that would otherwise have recovered to a win (2026-06-13, +0.28 EVE TP at bar 102 -> -1.08 SL CONTROL TRANSFER at bar 70). Net measured effect was -0.83 USD on 93 matched trades - not an improvement. Root cause: strategyBearControl/strategyBullControl (lines ~3823-3824) measure confirmed opposing IMPULSE (AERF force/drive, structure break, impulse threshold), not cumulative adverse excursion - a trade that gets hurt once and then goes flat deep underwater never re-triggers this score at any threshold, because there is no fresh impulse left to confirm. See strategyInvalidationEvidenceHardAtr below for the targeted fix instead.")
+float strategyInvalidationEvidenceHardAtr = input.float(1.50, "Severe invalidation evidence, bypasses control gate (ATR)", minval = 0.50, maxval = 3.00, step = 0.10, group = G_RISK,
+     tooltip = "Second, independent SL CONTROL TRANSFER trigger, additive to the control-gated one above. strategyInvalidationEvidence (the cumulative adverse ATR distance while price has stayed continuously beyond the logical stop - any bounce back above it resets this to 0) can plateau deep underwater without ever satisfying strategyInvalidationControlMin, because that score needs a fresh confirmed opposing impulse, not just sustained damage. In the 93-trade baseline audit the 2026-05-15 loss sat at 2.24-2.44 ATR of continuous adverse evidence from bar 4 onward with no further impulse ever confirming, and did not close until bar 24. This input closes the trade once evidence alone crosses this bar, regardless of strategyBearControl/strategyBullControl or the close-streak count. Deliberately set well above strategyMinInvalidationEvidenceAtr (0.30) so it only fires on severe, uninterrupted damage - it should not touch trades that dip and recover (like 2026-06-13, which never plateaued this deep). Needs a live Strategy Tester re-test like every change on this branch; not a guaranteed dollar outcome.")
 bool strategyUseFailureToLaunch = input.bool(true, "Enable route-aware failure-to-launch", group = G_RISK,
      tooltip = "Applies separate survival clocks to each route. Defaults are evidence-based: fast REV-S enabled, slow REV-P delayed, STRUCT disabled.")
 bool strategyLaunchRevSEnabled = input.bool(true, "FTL for REV-S (fast route)", group = G_RISK)
@@ -4330,7 +4332,8 @@ if barstate.isconfirmed and strategy.position_size > 0 and strategyTradeDirectio
         strategyLogicalBreakStreak := 0
         strategyInvalidationEvidence := 0.0
     bool longConfirmedFailure = strategyInvalidationActive and strategyLogicalBreakStreak >= strategyLogicalConfirmCloses and strategyInvalidationEvidence >= strategyMinInvalidationEvidenceAtr
-    if longConfirmedFailure and not strategyLongTpClose and not strategyLongLaunchClose
+    bool longSevereFailure = strategyInvalidationActive and strategyInvalidationEvidence >= strategyInvalidationEvidenceHardAtr
+    if (longConfirmedFailure or longSevereFailure) and not strategyLongTpClose and not strategyLongLaunchClose
         strategyLongSlClose := true
         strategy.close("LONG", comment = labTag("SL CONTROL TRANSFER", strategyLabData, 100.0 * strategyEntryAtr / strategyEntryPrice))
 if barstate.isconfirmed and strategy.position_size < 0 and strategyTradeDirection == -1 and bar_index > strategyEntryBar + strategyLogicalGraceBars
@@ -4344,7 +4347,8 @@ if barstate.isconfirmed and strategy.position_size < 0 and strategyTradeDirectio
         strategyLogicalBreakStreak := 0
         strategyInvalidationEvidence := 0.0
     bool shortConfirmedFailure = strategyInvalidationActive and strategyLogicalBreakStreak >= strategyLogicalConfirmCloses and strategyInvalidationEvidence >= strategyMinInvalidationEvidenceAtr
-    if shortConfirmedFailure and not strategyShortTpClose and not strategyShortLaunchClose
+    bool shortSevereFailure = strategyInvalidationActive and strategyInvalidationEvidence >= strategyInvalidationEvidenceHardAtr
+    if (shortConfirmedFailure or shortSevereFailure) and not strategyShortTpClose and not strategyShortLaunchClose
         strategyShortSlClose := true
         strategy.close("SHORT", comment = labTag("SL CONTROL TRANSFER", strategyLabData, 100.0 * strategyEntryAtr / strategyEntryPrice))
 // Validated 15m tail intervention. Thresholds stay fixed to preserve the
