@@ -58,6 +58,7 @@ string G_FLAT    = "16. Flat-only Lead SELL"
 string G_LGOV    = "17. BUY Launch Governor LAB"
 string G_FRESH   = "18. EVE Victory Freshness LAB"
 string G_TAKE    = "19. TAKE BUY Execution A/B LAB"
+string G_EXCUSUM = "20. Exhaustion CUSUM v2 (research overlay, not wired to signals)"
 string fastSpeed = input.string("Balanced", "Fast engine speed", options = ["Slow", "Balanced", "Fast", "Scalp"], group = G_CORE,
      tooltip = "Visual context only. It deliberately does not change BUY/SELL decisions in v7.0.")
 string slowSpeed = input.string("Slow", "Regime engine speed", options = ["Glacier", "Slow", "Balanced"], group = G_CORE)
@@ -1295,6 +1296,75 @@ bool longRecovered = not na(longRecoveryBar) and bar_index - longRecoveryBar <= 
 bool shortRecovered = not na(shortRecoveryBar) and bar_index - shortRecoveryBar <= 3
 bool longSweepSeen = not na(longSweepBar) and bar_index - longSweepBar <= exMemory
 bool shortSweepSeen = not na(shortSweepBar) and bar_index - shortSweepBar <= exMemory
+//=============================================================================
+// Exhaustion CUSUM v2 — research overlay, fully independent from the live
+// Exhaustion Index above. It reads only already-computed values (rsiScore,
+// flowScore, close, atr, fairValue, quietPenalty) and writes to nothing any
+// strategy/signal code reads: not criticalLowNow/dynamicLow/dynamicHigh,
+// not bottomCycleArmed, not bottomEve.step(), no strategy.entry/close call.
+// Safe to enable, disable or retune without any effect on BUY/SELL signals,
+// SL/TP or position sizing.
+//
+// Uses a leaky CUSUM (Page 1954) accumulator instead of EMA+level-crossing,
+// on three deliberately decorrelated evidence channels instead of the four
+// highly-correlated ones above: RSI location, raw (uncompressed) price
+// stretch, and MFI-vs-RSI divergence (the part of MFI that is NOT just a
+// copy of RSI). Compare its arm markers ("C" labels) against the existing
+// green/pink Exhaustion Index arm labels directly on the chart.
+//=============================================================================
+bool  exCusumEnable    = input.bool(true, "Enable Exhaustion CUSUM v2 (visual only)", group = G_EXCUSUM,
+     tooltip = "Independent research overlay only — see the block comment above this input for exactly what it does and does not touch. Off by default changes nothing; on by default only adds chart labels/data-window plots.")
+float exCusumWLocation   = input.float(0.45, "Weight: RSI location", minval = 0.0, maxval = 1.0, step = 0.05, group = G_EXCUSUM)
+float exCusumWStretch    = input.float(0.35, "Weight: price stretch", minval = 0.0, maxval = 1.0, step = 0.05, group = G_EXCUSUM)
+float exCusumWDivergence = input.float(0.20, "Weight: MFI-RSI divergence", minval = 0.0, maxval = 1.0, step = 0.05, group = G_EXCUSUM)
+float exCusumDrift  = input.float(0.35, "CUSUM neutral drift", minval = 0.05, maxval = 1.00, step = 0.01, group = G_EXCUSUM,
+     tooltip = "Subtracted from every bar's weighted evidence before accumulating. With unit-normalized z-scores and E[max(-Z,0)] ~ 0.40 for each side under roughly neutral conditions, drift needs to sit close to (wLocation+wStretch)*0.40 or the accumulator drifts upward on ordinary noise instead of arming only on genuine extremes. 0.35 is a calculated starting point, not a proven one - retune while watching how often the C-labels appear.")
+float exCusumMemory = input.float(0.90, "CUSUM leak (memory)", minval = 0.50, maxval = 0.99, step = 0.01, group = G_EXCUSUM)
+float exCusumBaseH  = input.float(4.0, "CUSUM base threshold (h)", minval = 1.0, maxval = 15.0, step = 0.5, group = G_EXCUSUM)
+int   exCusumStdevLen  = input.int(50, "Z-score normalization window", minval = 10, maxval = 200, group = G_EXCUSUM)
+bool  exCusumShowMarks = input.bool(true, "Mark new CUSUM arms on chart", group = G_EXCUSUM)
+
+float exCusumRsiStdev = ta.stdev(rsiScore, exCusumStdevLen)
+float zLocation2 = exCusumRsiStdev > 0 ? (rsiScore - 50.0) / exCusumRsiStdev : 0.0
+float exCusumStretchRaw = atr > 0 ? (close - fairValue) / atr : 0.0
+float exCusumStretchStdev = ta.stdev(exCusumStretchRaw, exCusumStdevLen)
+float zStretch2 = exCusumStretchStdev > 0 ? exCusumStretchRaw / exCusumStretchStdev : 0.0
+float exCusumDivergenceRaw = flowScore - rsiScore
+float exCusumDivergenceStdev = ta.stdev(exCusumDivergenceRaw, exCusumStdevLen)
+float zDivergence2 = exCusumDivergenceStdev > 0 ? exCusumDivergenceRaw / exCusumDivergenceStdev : 0.0
+
+float exCusumEBottom = exCusumWLocation * math.max(-zLocation2, 0.0) + exCusumWStretch * math.max(-zStretch2, 0.0) + exCusumWDivergence * math.max(zDivergence2, 0.0) - exCusumDrift
+float exCusumETop    = exCusumWLocation * math.max(zLocation2, 0.0)  + exCusumWStretch * math.max(zStretch2, 0.0)  + exCusumWDivergence * math.max(-zDivergence2, 0.0) - exCusumDrift
+
+var float exCusumBottom = 0.0
+var float exCusumTop = 0.0
+if exCusumEnable and barstate.isconfirmed
+    exCusumBottom := math.max(0.0, exCusumMemory * exCusumBottom + exCusumEBottom)
+    exCusumTop := math.max(0.0, exCusumMemory * exCusumTop + exCusumETop)
+
+float exCusumH = exCusumBaseH + quietPenalty
+bool exCusumArmedBottom = exCusumEnable and exCusumBottom > exCusumH
+bool exCusumArmedTop = exCusumEnable and exCusumTop > exCusumH
+bool exCusumNewArmBottom = barstate.isconfirmed and exCusumArmedBottom and not exCusumArmedBottom[1]
+bool exCusumNewArmTop = barstate.isconfirmed and exCusumArmedTop and not exCusumArmedTop[1]
+var int exCusumBottomEpisodes = 0
+var int exCusumTopEpisodes = 0
+if exCusumNewArmBottom
+    exCusumBottomEpisodes += 1
+    if exCusumShowMarks
+        label.new(bar_index, low, "C" + str.tostring(math.round(exCusumBottom)), yloc = yloc.belowbar,
+             style = label.style_none, textcolor = #2FE0A8, size = size.tiny)
+if exCusumNewArmTop
+    exCusumTopEpisodes += 1
+    if exCusumShowMarks
+        label.new(bar_index, high, "C" + str.tostring(math.round(exCusumTop)), yloc = yloc.abovebar,
+             style = label.style_none, textcolor = #FF6FA5, size = size.tiny)
+
+plot(exCusumEnable ? exCusumBottom : na, "CUSUM Bottom Accumulator", display = display.data_window)
+plot(exCusumEnable ? exCusumTop : na, "CUSUM Top Accumulator", display = display.data_window)
+plot(exCusumEnable ? exCusumH : na, "CUSUM Threshold", display = display.data_window)
+plot(exCusumEnable ? exCusumBottomEpisodes : na, "CUSUM Bottom Episodes", display = display.data_window)
+plot(exCusumEnable ? exCusumTopEpisodes : na, "CUSUM Top Episodes", display = display.data_window)
 //=============================================================================
 // Signal evidence v7.0: structural context and causal auction response
 // and Directional Victory Transfer
