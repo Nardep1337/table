@@ -1322,6 +1322,8 @@ float exCusumDrift  = input.float(0.35, "CUSUM neutral drift", minval = 0.05, ma
 float exCusumMemory = input.float(0.90, "CUSUM leak (memory)", minval = 0.50, maxval = 0.99, step = 0.01, group = G_EXCUSUM)
 float exCusumBaseH  = input.float(4.0, "CUSUM base threshold (h)", minval = 1.0, maxval = 15.0, step = 0.5, group = G_EXCUSUM)
 int   exCusumStdevLen  = input.int(50, "Z-score normalization window", minval = 10, maxval = 200, group = G_EXCUSUM)
+float exCusumRecoveryFrac = input.float(0.35, "Recovery fraction of threshold", minval = 0.10, maxval = 0.90, step = 0.05, group = G_EXCUSUM,
+     tooltip = "An armed episode only ends once the accumulator drops to this fraction of the threshold (h), not merely below h itself. Without this hysteresis gap, an accumulator hovering right at h would flicker arm/re-arm on ordinary noise and double-count what is really one episode.")
 bool  exCusumShowMarks = input.bool(true, "Mark new CUSUM arms on chart", group = G_EXCUSUM)
 
 float exCusumRsiStdev = ta.stdev(rsiScore, exCusumStdevLen)
@@ -1343,10 +1345,21 @@ if exCusumEnable and barstate.isconfirmed
     exCusumTop := math.max(0.0, exCusumMemory * exCusumTop + exCusumETop)
 
 float exCusumH = exCusumBaseH + quietPenalty
-bool exCusumArmedBottom = exCusumEnable and exCusumBottom > exCusumH
-bool exCusumArmedTop = exCusumEnable and exCusumTop > exCusumH
-bool exCusumNewArmBottom = barstate.isconfirmed and exCusumArmedBottom and not exCusumArmedBottom[1]
-bool exCusumNewArmTop = barstate.isconfirmed and exCusumArmedTop and not exCusumArmedTop[1]
+float exCusumRecoveryLevel = exCusumRecoveryFrac * exCusumH
+var bool exCusumEpisodeBottom = false
+var bool exCusumEpisodeTop = false
+bool exCusumNewArmBottom = barstate.isconfirmed and exCusumEnable and not exCusumEpisodeBottom and exCusumBottom > exCusumH
+bool exCusumNewArmTop = barstate.isconfirmed and exCusumEnable and not exCusumEpisodeTop and exCusumTop > exCusumH
+bool exCusumRecoveredBottom = barstate.isconfirmed and exCusumEpisodeBottom and exCusumBottom <= exCusumRecoveryLevel
+bool exCusumRecoveredTop = barstate.isconfirmed and exCusumEpisodeTop and exCusumTop <= exCusumRecoveryLevel
+if exCusumNewArmBottom
+    exCusumEpisodeBottom := true
+if exCusumRecoveredBottom
+    exCusumEpisodeBottom := false
+if exCusumNewArmTop
+    exCusumEpisodeTop := true
+if exCusumRecoveredTop
+    exCusumEpisodeTop := false
 var int exCusumBottomEpisodes = 0
 var int exCusumTopEpisodes = 0
 if exCusumNewArmBottom
