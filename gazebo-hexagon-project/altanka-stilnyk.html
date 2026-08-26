@@ -1,0 +1,998 @@
+<title>Альтанка «Стільник»</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=Work+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper: #ece3ce;
+    --paper-panel: #e3d7b8;
+    --paper-raised: #ede4cc;
+    --ink: #263449;
+    --ink-dim: rgba(38,52,73,0.64);
+    --ink-faint: rgba(38,52,73,0.38);
+    --rule: rgba(38,52,73,0.32);
+    --rule-soft: rgba(38,52,73,0.16);
+    --accent: #b1501f;
+    --accent-ink: #8a3d15;
+    --accent-soft: rgba(177,80,31,0.14);
+    --line-blue: #35618f;
+    --focus: #1c6fae;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper: #0f1e2b;
+      --paper-panel: #142838;
+      --paper-raised: #17303f;
+      --ink: #dbe7f1;
+      --ink-dim: rgba(219,231,241,0.68);
+      --ink-faint: rgba(219,231,241,0.42);
+      --rule: rgba(219,231,241,0.32);
+      --rule-soft: rgba(219,231,241,0.14);
+      --accent: #ef9a5b;
+      --accent-ink: #ffb27a;
+      --accent-soft: rgba(239,154,91,0.16);
+      --line-blue: #7fb3de;
+      --focus: #7cc0f2;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper: #0f1e2b;
+    --paper-panel: #142838;
+    --paper-raised: #17303f;
+    --ink: #dbe7f1;
+    --ink-dim: rgba(219,231,241,0.68);
+    --ink-faint: rgba(219,231,241,0.42);
+    --rule: rgba(219,231,241,0.32);
+    --rule-soft: rgba(219,231,241,0.14);
+    --accent: #ef9a5b;
+    --accent-ink: #ffb27a;
+    --accent-soft: rgba(239,154,91,0.16);
+    --line-blue: #7fb3de;
+    --focus: #7cc0f2;
+  }
+
+  *{ box-sizing: border-box; }
+  html{ background: var(--paper); }
+  body{
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Work Sans", system-ui, sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection{ background: var(--accent-soft); color: var(--ink); }
+  a{ color: var(--accent-ink); }
+  a:focus-visible, button:focus-visible{ outline: 2px solid var(--focus); outline-offset: 3px; }
+
+  .page{
+    max-width: 980px;
+    margin: 0 auto;
+    padding: clamp(16px, 4vw, 40px) clamp(14px, 4vw, 28px) 60px;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(22px, 4vw, 34px);
+  }
+
+  /* ---------- shared type ---------- */
+  .eyebrow{
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent-ink);
+    font-weight: 600;
+  }
+  h1, h2, h3{
+    font-family: "Big Shoulders Display", system-ui, sans-serif;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+    text-wrap: balance;
+    margin: 0;
+    color: var(--ink);
+  }
+  .lede{
+    max-width: 62ch;
+    color: var(--ink-dim);
+    font-size: 15.5px;
+  }
+  .num{ font-family: "JetBrains Mono", monospace; font-variant-numeric: tabular-nums; }
+
+  /* ---------- cover ---------- */
+  .cover{
+    border: 2px solid var(--ink);
+    background: var(--paper-panel);
+    box-shadow: inset 0 0 0 6px var(--rule-soft);
+    padding: clamp(20px, 5vw, 44px);
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+  .cover-top{
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .cover h1{ font-size: clamp(38px, 7vw, 64px); line-height: 0.96; }
+  .cover .lede{ max-width: 54ch; margin-top: 6px; }
+  .hexmark{ flex-shrink: 0; color: var(--accent); }
+
+  .spec-grid{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+  }
+  .spec-cell{
+    background: var(--paper-raised);
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .spec-cell .k{ font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); font-family: "JetBrains Mono", monospace; }
+  .spec-cell .v{ font-family: "JetBrains Mono", monospace; font-size: 19px; font-weight: 600; color: var(--ink); }
+  .spec-cell .v small{ font-size: 12px; font-weight: 400; color: var(--ink-dim); }
+
+  .index-list{
+    display: grid;
+    gap: 0;
+    border-top: 1px solid var(--rule);
+  }
+  .index-row{
+    display: grid;
+    grid-template-columns: 52px 1fr auto;
+    gap: 14px;
+    align-items: baseline;
+    padding: 10px 2px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .index-row .code{ font-family: "JetBrains Mono", monospace; color: var(--accent-ink); font-weight: 600; font-size: 13px; }
+  .index-row .name{ font-size: 14.5px; }
+  .index-row .desc{ font-size: 12.5px; color: var(--ink-dim); text-align: right; }
+
+  /* ---------- sheet frame ---------- */
+  .sheet{
+    border: 2px solid var(--ink);
+    background: var(--paper-panel);
+    box-shadow: inset 0 0 0 6px var(--rule-soft);
+    padding: clamp(16px, 4vw, 30px);
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .sheet-head{ display: flex; flex-direction: column; gap: 6px; }
+  .sheet-head h2{ font-size: clamp(22px, 4vw, 30px); }
+
+  .sheet-body{
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(200px, 1fr);
+    gap: 22px;
+    align-items: start;
+  }
+  @media (max-width: 720px){
+    .sheet-body{ grid-template-columns: 1fr; }
+  }
+
+  .drawing-wrap{
+    background: var(--paper-raised);
+    border: 1px solid var(--rule);
+    padding: 10px;
+    overflow-x: auto;
+  }
+  .drawing-wrap svg{ display: block; width: 100%; height: auto; min-width: 460px; }
+  .drawing-wrap.tall svg{ min-width: 360px; }
+  figure{ margin: 0; }
+  figcaption{
+    margin-top: 8px;
+    font-size: 12.5px;
+    color: var(--ink-dim);
+  }
+
+  .notes{ display: flex; flex-direction: column; gap: 14px; }
+  .notes h3{
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    color: var(--ink-faint);
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 600;
+  }
+  .notes ul{ margin: 6px 0 0; padding-left: 18px; font-size: 13.5px; color: var(--ink-dim); display: flex; flex-direction: column; gap: 5px; }
+  .notes li::marker{ color: var(--accent-ink); }
+  .callout{
+    border-left: 3px solid var(--accent);
+    background: var(--accent-soft);
+    padding: 8px 10px;
+    font-size: 13px;
+    color: var(--ink-dim);
+    display: flex;
+    gap: 8px;
+  }
+  .callout b{ color: var(--ink); font-family: "JetBrains Mono", monospace; }
+
+  /* ---------- title block ---------- */
+  .titleblock{
+    display: grid;
+    grid-template-columns: 1.4fr 0.7fr 1.6fr 0.7fr 0.9fr;
+    border-top: 2px solid var(--ink);
+    margin-top: 4px;
+  }
+  @media (max-width: 640px){
+    .titleblock{ grid-template-columns: repeat(2, 1fr); }
+  }
+  .tb-cell{
+    border-left: 1px solid var(--rule);
+    padding: 6px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .tb-cell:first-child{ border-left: none; }
+  .tb-label{ font-family: "JetBrains Mono", monospace; font-size: 9.5px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ink-faint); }
+  .tb-value{ font-size: 13px; font-weight: 500; }
+
+  /* ---------- tables ---------- */
+  .table-wrap{ overflow-x: auto; border: 1px solid var(--rule); }
+  table{ border-collapse: collapse; width: 100%; min-width: 640px; font-size: 13px; }
+  thead th{
+    text-align: left;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    background: var(--paper-raised);
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--rule);
+    position: sticky;
+    top: 0;
+  }
+  tbody td{ padding: 8px 12px; border-bottom: 1px solid var(--rule-soft); vertical-align: top; }
+  tbody tr.group td{
+    padding-top: 16px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent-ink);
+    border-bottom: 1px solid var(--rule);
+    background: none;
+  }
+  td.qty, td.size{ font-family: "JetBrains Mono", monospace; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.mat{ color: var(--ink-dim); }
+
+  /* ---------- sketches ---------- */
+  .sketch-grid{ display: grid; grid-template-columns: 1.4fr 1fr; gap: 18px; }
+  @media (max-width: 780px){ .sketch-grid{ grid-template-columns: 1fr; } }
+  .sketch-card{
+    background: #dfe9e2;
+    border: 1px solid var(--rule);
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .sketch-card svg{ display: block; width: 100%; height: auto; }
+  .sketch-cap{ font-size: 12.5px; color: var(--ink-dim); }
+  .sketch-cap b{ color: var(--ink); }
+
+  .footnote{ font-size: 12px; color: var(--ink-faint); text-align: center; padding-top: 8px; }
+</style>
+
+<div class="page">
+
+  <!-- ============ COVER ============ -->
+  <header class="cover">
+    <div class="cover-top">
+      <div>
+        <p class="eyebrow">Комплект робочих креслень · дерев'яна альтанка</p>
+        <h1>Альтанка<br>«Стільник»</h1>
+        <p class="lede">Шестикутна відкрита альтанка на дерев'яному каркасі з вальмовим (шатровим) дахом. Комплект містить план підлоги, фасад, план покрівлі, вузли з'єднань, специфікацію матеріалів та ескізи готового вигляду — шість аркушів, об'єднаних однією системою позначень.</p>
+      </div>
+      <svg class="hexmark" width="86" height="86" viewBox="0 0 100 100" role="img" aria-label="Схематичний значок шестикутника">
+        <polygon points="50,6 93,28 93,72 50,94 7,72 7,28" fill="none" stroke="currentColor" stroke-width="3"/>
+        <polygon points="50,26 76,39 76,61 50,74 24,61 24,39" fill="none" stroke="currentColor" stroke-width="1.6" opacity="0.6"/>
+        <circle cx="50" cy="50" r="4" fill="currentColor"/>
+      </svg>
+    </div>
+
+    <div class="spec-grid">
+      <div class="spec-cell"><span class="k">Форма плану</span><span class="v" style="font-size:15px">Правильний 6-кутник</span></div>
+      <div class="spec-cell"><span class="k">Крок опор (сторона)</span><span class="v">2000 <small>мм</small></span></div>
+      <div class="spec-cell"><span class="k">Діаметр по кутах</span><span class="v">4000 <small>мм</small></span></div>
+      <div class="spec-cell"><span class="k">Діаметр по гранях</span><span class="v">3464 <small>мм</small></span></div>
+      <div class="spec-cell"><span class="k">Площа підлоги</span><span class="v">≈10,4 <small>м²</small></span></div>
+      <div class="spec-cell"><span class="k">Висота до карниза</span><span class="v">2300 <small>мм</small></span></div>
+      <div class="spec-cell"><span class="k">Загальна висота</span><span class="v">≈3700 <small>мм</small></span></div>
+      <div class="spec-cell"><span class="k">Кут нахилу даху</span><span class="v">35 <small>°</small></span></div>
+      <div class="spec-cell"><span class="k">Каркас</span><span class="v" style="font-size:15px">Модрина / сосна кл.4</span></div>
+    </div>
+
+    <div>
+      <p class="eyebrow" style="margin-bottom:8px">Склад комплекту</p>
+      <div class="index-list">
+        <div class="index-row"><span class="code">A1</span><span class="name">План підлоги та фундамент</span><span class="desc">опори, балки, лаги, палі</span></div>
+        <div class="index-row"><span class="code">A2</span><span class="name">Фасад (головний вигляд)</span><span class="desc">висоти, огородження, покрівля</span></div>
+        <div class="index-row"><span class="code">A3</span><span class="name">План покрівлі</span><span class="desc">крокви, хаб, обрешітка</span></div>
+        <div class="index-row"><span class="code">A4</span><span class="name">Вузли з'єднань</span><span class="desc">вузол А та вузол Б, у збільшенні</span></div>
+        <div class="index-row"><span class="code">A5</span><span class="name">Специфікація матеріалів</span><span class="desc">перелік, розміри, кількість</span></div>
+        <div class="index-row"><span class="code">A6</span><span class="name">Ескізи готового вигляду</span><span class="desc">зовнішній вигляд, дах зсередини</span></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============ A1 FLOOR PLAN ============ -->
+  <section class="sheet" aria-labelledby="a1-title">
+    <div class="sheet-head">
+      <p class="eyebrow">Аркуш A1</p>
+      <h2 id="a1-title">План підлоги та фундамент</h2>
+      <p class="lede">Вигляд згори: розташування опор, радіальних балок і лаг підлоги, з фундаментними подушками під кожною опорою (показані пунктиром).</p>
+    </div>
+
+    <div class="sheet-body">
+      <div class="drawing-wrap">
+        <figure>
+          <svg viewBox="-235 -215 470 430" role="img" aria-label="План підлоги шестикутної альтанки з розмірами 4000 мм по кутах, 3464 мм по гранях і кроком опор 2000 мм, з радіальними балками та лагами">
+            <!-- footings (dashed, under grade) -->
+            <g stroke="currentColor" stroke-width="1" fill="none" stroke-dasharray="4 3" opacity="0.55">
+              <rect x="147" y="-13" width="26" height="26"/>
+              <rect x="67" y="-151.6" width="26" height="26"/>
+              <rect x="-93" y="-151.6" width="26" height="26"/>
+              <rect x="-173" y="-13" width="26" height="26"/>
+              <rect x="-93" y="125.6" width="26" height="26"/>
+              <rect x="67" y="125.6" width="26" height="26"/>
+              <rect x="-14" y="-14" width="28" height="28"/>
+            </g>
+
+            <!-- radial beams -->
+            <g stroke="currentColor" stroke-width="2">
+              <line x1="0" y1="0" x2="160" y2="0"/>
+              <line x1="0" y1="0" x2="80" y2="-138.6"/>
+              <line x1="0" y1="0" x2="-80" y2="-138.6"/>
+              <line x1="0" y1="0" x2="-160" y2="0"/>
+              <line x1="0" y1="0" x2="-80" y2="138.6"/>
+              <line x1="0" y1="0" x2="80" y2="138.6"/>
+            </g>
+
+            <!-- hexagon outline (top plate over posts) -->
+            <polygon points="160,0 80,-138.6 -80,-138.6 -160,0 -80,138.6 80,138.6" fill="none" stroke="currentColor" stroke-width="2.6"/>
+
+            <!-- joists, front bay, typ. -->
+            <g stroke="currentColor" stroke-width="1.3" opacity="0.85">
+              <line x1="-40" y1="69.3" x2="-40" y2="138.6"/>
+              <line x1="0" y1="0" x2="0" y2="138.6"/>
+              <line x1="40" y1="69.3" x2="40" y2="138.6"/>
+            </g>
+            <line x1="0" y1="100" x2="46" y2="82" stroke="currentColor" stroke-width="1"/>
+            <text x="49" y="80" font-family="JetBrains Mono, monospace" font-size="10" fill="currentColor">лага 45×145,</text>
+            <text x="49" y="92" font-family="JetBrains Mono, monospace" font-size="10" fill="currentColor">крок 400 (тип.)</text>
+
+            <!-- posts -->
+            <g fill="var(--paper-raised)" stroke="currentColor" stroke-width="2">
+              <circle cx="160" cy="0" r="9"/>
+              <circle cx="80" cy="-138.6" r="9"/>
+              <circle cx="-80" cy="-138.6" r="9"/>
+              <circle cx="-160" cy="0" r="9"/>
+              <circle cx="-80" cy="138.6" r="9"/>
+              <circle cx="80" cy="138.6" r="9"/>
+            </g>
+            <!-- centre support -->
+            <circle cx="0" cy="0" r="13" fill="var(--paper-raised)" stroke="currentColor" stroke-width="2"/>
+
+            <g font-family="JetBrains Mono, monospace" font-size="10" fill="currentColor" opacity="0.85">
+              <text x="174" y="4">П1</text>
+              <text x="88" y="-146">П2</text>
+              <text x="-100" y="-146">П3</text>
+              <text x="-186" y="4">П4</text>
+              <text x="-100" y="156">П5</text>
+              <text x="88" y="156">П6</text>
+            </g>
+            <text x="7" y="-20" font-family="JetBrains Mono, monospace" font-size="9.5" fill="currentColor" opacity="0.85">опора центр.</text>
+            <text x="7" y="-9" font-family="JetBrains Mono, monospace" font-size="9.5" fill="currentColor" opacity="0.85">100×100</text>
+
+            <!-- detail marker A near post P6 -->
+            <circle cx="112" cy="118" r="9" fill="var(--accent)"/>
+            <text x="112" y="121.5" font-family="JetBrains Mono, monospace" font-size="10" font-weight="700" fill="var(--paper)" text-anchor="middle">A</text>
+            <line x1="103" y1="112" x2="85" y2="140" stroke="var(--accent)" stroke-width="1"/>
+
+            <!-- dimension: across corners (top) -->
+            <g stroke="currentColor" stroke-width="1">
+              <line x1="160" y1="0" x2="160" y2="-190"/>
+              <line x1="-160" y1="0" x2="-160" y2="-190"/>
+              <line x1="-160" y1="-182" x2="160" y2="-182"/>
+              <line x1="-160" y1="-186" x2="-160" y2="-178"/>
+              <line x1="160" y1="-186" x2="160" y2="-178"/>
+            </g>
+            <rect x="-24" y="-192" width="48" height="16" fill="var(--paper-raised)"/>
+            <text x="0" y="-181" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" fill="currentColor">4000</text>
+
+            <!-- dimension: side length (bottom) -->
+            <g stroke="currentColor" stroke-width="1">
+              <line x1="-80" y1="138.6" x2="-80" y2="172"/>
+              <line x1="80" y1="138.6" x2="80" y2="172"/>
+              <line x1="-80" y1="166" x2="80" y2="166"/>
+              <line x1="-80" y1="162" x2="-80" y2="170"/>
+              <line x1="80" y1="162" x2="80" y2="170"/>
+            </g>
+            <rect x="-22" y="158" width="44" height="16" fill="var(--paper-raised)"/>
+            <text x="0" y="169" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" fill="currentColor">2000</text>
+
+            <!-- dimension: across flats (right, vertical) -->
+            <g stroke="currentColor" stroke-width="1">
+              <line x1="0" y1="-138.6" x2="204" y2="-138.6"/>
+              <line x1="0" y1="138.6" x2="204" y2="138.6"/>
+              <line x1="196" y1="-138.6" x2="196" y2="138.6"/>
+              <line x1="188" y1="-138.6" x2="204" y2="-138.6"/>
+              <line x1="188" y1="138.6" x2="204" y2="138.6"/>
+            </g>
+            <rect x="200" y="-8" width="17" height="46" fill="var(--paper-raised)"/>
+            <text x="208.5" y="0" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" fill="currentColor" transform="rotate(-90 208.5 0)">3464</text>
+          </svg>
+        </figure>
+        <figcaption>Мал. A1.1 — план підлоги, вигляд згори. Пунктиром — фундаментні подушки під опорами.</figcaption>
+      </div>
+
+      <div class="notes">
+        <div>
+          <h3>Опис</h3>
+          <ul>
+            <li>6 кутових опор 120×120 мм + 1 центральна 100×100 мм</li>
+            <li>Радіальні балки підлоги 45×195 мм — від кожної опори до центру</li>
+            <li>Лаги 45×145 мм з кроком ≈400 мм у кожному з 6 секторів</li>
+            <li>Настил — шпунтована терасна дошка 28×140 мм</li>
+          </ul>
+        </div>
+        <div class="callout"><b>A</b><span>Вузол «стійка–обв'язка» — див. аркуш A4</span></div>
+      </div>
+    </div>
+
+    <div class="titleblock">
+      <div class="tb-cell"><span class="tb-label">Проєкт</span><span class="tb-value">Альтанка «Стільник»</span></div>
+      <div class="tb-cell"><span class="tb-label">Аркуш</span><span class="tb-value">A1 / 6</span></div>
+      <div class="tb-cell"><span class="tb-label">Назва</span><span class="tb-value">План підлоги та фундамент</span></div>
+      <div class="tb-cell"><span class="tb-label">Масштаб</span><span class="tb-value">1 : 80</span></div>
+      <div class="tb-cell"><span class="tb-label">Дата</span><span class="tb-value">26.08.2026</span></div>
+    </div>
+  </section>
+
+  <!-- ============ A2 ELEVATION ============ -->
+  <section class="sheet" aria-labelledby="a2-title">
+    <div class="sheet-head">
+      <p class="eyebrow">Аркуш A2</p>
+      <h2 id="a2-title">Фасад — головний вигляд</h2>
+      <p class="lede">Вигляд спереду на одну грань шестикутника: висоти від землі, огородження та профіль вальмового даху лицьової грані. Повна геометрія покрівлі — на аркуші A3.</p>
+    </div>
+
+    <div class="sheet-body">
+      <div class="drawing-wrap tall">
+        <figure>
+          <svg viewBox="-175 -335 350 400" role="img" aria-label="Фасад альтанки: висота до карниза 2300 мм, загальна висота близько 3700 мм, кут нахилу даху 35 градусів, підлога на висоті 450 мм від землі">
+            <!-- ground hatch -->
+            <line x1="-150" y1="0" x2="150" y2="0" stroke="currentColor" stroke-width="2"/>
+            <g stroke="currentColor" stroke-width="1" opacity="0.55">
+              <line x1="-150" y1="0" x2="-140" y2="10"/>
+              <line x1="-125" y1="0" x2="-115" y2="10"/>
+              <line x1="-100" y1="0" x2="-90" y2="10"/>
+              <line x1="-40" y1="0" x2="-30" y2="10"/>
+              <line x1="-10" y1="0" x2="0" y2="10"/>
+              <line x1="20" y1="0" x2="30" y2="10"/>
+              <line x1="55" y1="0" x2="65" y2="10"/>
+              <line x1="90" y1="0" x2="100" y2="10"/>
+              <line x1="120" y1="0" x2="130" y2="10"/>
+            </g>
+
+            <!-- footing pads -->
+            <g fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="4 3" opacity="0.7">
+              <rect x="-96" y="0" width="32" height="26"/>
+              <rect x="64" y="0" width="32" height="26"/>
+            </g>
+
+            <!-- posts -->
+            <g fill="var(--paper-raised)" stroke="currentColor" stroke-width="2">
+              <rect x="-85" y="-184" width="10" height="184"/>
+              <rect x="75" y="-184" width="10" height="184"/>
+            </g>
+
+            <!-- floor deck line -->
+            <line x1="-92" y1="-36" x2="92" y2="-36" stroke="currentColor" stroke-width="2.4"/>
+            <text x="98" y="-33" font-family="JetBrains Mono, monospace" font-size="10" fill="currentColor">підлога, +450</text>
+
+            <!-- rails + balusters -->
+            <g stroke="currentColor" stroke-width="2">
+              <line x1="-80" y1="-60" x2="80" y2="-60"/>
+              <line x1="-80" y1="-108" x2="80" y2="-108"/>
+            </g>
+            <g stroke="currentColor" stroke-width="1.4">
+              <line x1="-64" y1="-60" x2="-64" y2="-108"/>
+              <line x1="-38" y1="-60" x2="-38" y2="-108"/>
+              <line x1="-12" y1="-60" x2="-12" y2="-108"/>
+              <line x1="14" y1="-60" x2="14" y2="-108"/>
+              <line x1="40" y1="-60" x2="40" y2="-108"/>
+              <line x1="64" y1="-60" x2="64" y2="-108"/>
+            </g>
+
+            <!-- top plate band -->
+            <rect x="-90" y="-196" width="180" height="12" fill="var(--paper-raised)" stroke="currentColor" stroke-width="2"/>
+
+            <!-- roof (front hip face) -->
+            <line x1="-98" y1="-196" x2="98" y2="-196" stroke="currentColor" stroke-width="2.4"/>
+            <polygon points="-98,-196 98,-196 0,-293" fill="var(--paper-raised)" stroke="currentColor" stroke-width="2.6"/>
+            <g stroke="currentColor" stroke-width="1" opacity="0.6">
+              <line x1="-68.6" y1="-224.1" x2="68.6" y2="-224.1"/>
+              <line x1="-39.2" y1="-252.2" x2="39.2" y2="-252.2"/>
+              <line x1="-9.8" y1="-280.3" x2="9.8" y2="-280.3"/>
+            </g>
+            <!-- finial -->
+            <line x1="0" y1="-293" x2="0" y2="-313" stroke="currentColor" stroke-width="2"/>
+            <circle cx="0" cy="-317" r="4" fill="currentColor"/>
+
+            <!-- pitch angle note -->
+            <path d="M -98 -196 A 30 30 0 0 1 -85 -217" fill="none" stroke="var(--line-blue)" stroke-width="1"/>
+            <text x="-96" y="-224" font-family="JetBrains Mono, monospace" font-size="10" fill="var(--line-blue)">35°</text>
+
+            <!-- detail marker A -->
+            <circle cx="-85" cy="-190" r="10" fill="var(--accent)"/>
+            <text x="-85" y="-186.5" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="700" fill="var(--paper)" text-anchor="middle">A</text>
+
+            <!-- overall height dimension chain (right) -->
+            <g stroke="currentColor" stroke-width="1">
+              <line x1="98" y1="-196" x2="140" y2="-196"/>
+              <line x1="0" y1="-293" x2="140" y2="-293"/>
+              <line x1="130" y1="0" x2="140" y2="0"/>
+              <line x1="130" y1="-36" x2="140" y2="-36"/>
+              <line x1="130" y1="-184" x2="140" y2="-184"/>
+
+              <line x1="135" y1="0" x2="135" y2="-184"/>
+              <line x1="145" y1="-196" x2="145" y2="-293"/>
+            </g>
+            <rect x="118" y="-98" width="34" height="16" fill="var(--paper-raised)"/>
+            <text x="135" y="-87" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" fill="currentColor" transform="rotate(-90 135 -87)">2300</text>
+            <rect x="128" y="-250" width="34" height="16" fill="var(--paper-raised)"/>
+            <text x="145" y="-239" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" fill="currentColor" transform="rotate(-90 145 -239)">3700 заг.</text>
+
+            <!-- front span dimension (bottom) -->
+            <g stroke="currentColor" stroke-width="1">
+              <line x1="-80" y1="-184" x2="-80" y2="30"/>
+              <line x1="80" y1="-184" x2="80" y2="30"/>
+              <line x1="-80" y1="24" x2="80" y2="24"/>
+              <line x1="-80" y1="20" x2="-80" y2="28"/>
+              <line x1="80" y1="20" x2="80" y2="28"/>
+            </g>
+            <rect x="-22" y="16" width="44" height="16" fill="var(--paper-raised)"/>
+            <text x="0" y="27" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" fill="currentColor">2000</text>
+          </svg>
+        </figure>
+        <figcaption>Мал. A2.1 — головний фасад. Праворуч — розмірний ланцюг висот від рівня землі.</figcaption>
+      </div>
+
+      <div class="notes">
+        <div>
+          <h3>Висотні позначки</h3>
+          <ul>
+            <li>Підлога — <span class="num">+450</span> мм</li>
+            <li>Нижній поручень — <span class="num">+750</span> мм</li>
+            <li>Верхній поручень — <span class="num">+1350</span> мм</li>
+            <li>Карниз (верх опори) — <span class="num">+2300</span> мм</li>
+            <li>Вершина даху — <span class="num">≈+3700</span> мм</li>
+          </ul>
+        </div>
+        <div class="callout"><b>A</b><span>Вузол «стійка–обв'язка» — у збільшенні на аркуші A4</span></div>
+      </div>
+    </div>
+
+    <div class="titleblock">
+      <div class="tb-cell"><span class="tb-label">Проєкт</span><span class="tb-value">Альтанка «Стільник»</span></div>
+      <div class="tb-cell"><span class="tb-label">Аркуш</span><span class="tb-value">A2 / 6</span></div>
+      <div class="tb-cell"><span class="tb-label">Назва</span><span class="tb-value">Фасад, головний вигляд</span></div>
+      <div class="tb-cell"><span class="tb-label">Масштаб</span><span class="tb-value">1 : 80</span></div>
+      <div class="tb-cell"><span class="tb-label">Дата</span><span class="tb-value">26.08.2026</span></div>
+    </div>
+  </section>
+
+  <!-- ============ A3 ROOF FRAMING PLAN ============ -->
+  <section class="sheet" aria-labelledby="a3-title">
+    <div class="sheet-head">
+      <p class="eyebrow">Аркуш A3</p>
+      <h2 id="a3-title">План покрівлі</h2>
+      <p class="lede">Шість крокв сходяться до центрального вузла-хаба, формуючи шатровий дах. Звис даху та ряди обрешітки показані відносно контуру верхньої обв'язки.</p>
+    </div>
+
+    <div class="sheet-body">
+      <div class="drawing-wrap">
+        <figure>
+          <svg viewBox="-225 -225 450 450" role="img" aria-label="План покрівлі: шість крокв сходяться до центрального хаба 150×150 мм, звис даху 400 мм, два ряди обрешітки">
+            <!-- eave overhang ring (dashed) -->
+            <polygon points="195,0 97.6,-169.1 -97.6,-169.1 -195,0 -97.6,169.1 97.6,169.1" fill="none" stroke="currentColor" stroke-width="1.4" stroke-dasharray="5 4" opacity="0.7"/>
+            <!-- batten rings -->
+            <polygon points="112,0 56,-97 -56,-97 -112,0 -56,97 56,97" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="2 3" opacity="0.55"/>
+            <polygon points="64,0 32,-55.4 -32,-55.4 -64,0 -32,55.4 32,55.4" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="2 3" opacity="0.55"/>
+
+            <!-- rafters -->
+            <g stroke="currentColor" stroke-width="2.2">
+              <line x1="0" y1="0" x2="160" y2="0"/>
+              <line x1="0" y1="0" x2="80" y2="-138.6"/>
+              <line x1="0" y1="0" x2="-80" y2="-138.6"/>
+              <line x1="0" y1="0" x2="-160" y2="0"/>
+              <line x1="0" y1="0" x2="-80" y2="138.6"/>
+              <line x1="0" y1="0" x2="80" y2="138.6"/>
+            </g>
+
+            <!-- top plate outline -->
+            <polygon points="160,0 80,-138.6 -80,-138.6 -160,0 -80,138.6 80,138.6" fill="none" stroke="currentColor" stroke-width="2"/>
+
+            <!-- hub -->
+            <polygon points="0,-18 15.6,-9 15.6,9 0,18 -15.6,9 -15.6,-9" fill="var(--paper-raised)" stroke="currentColor" stroke-width="2.2"/>
+
+            <!-- detail marker B -->
+            <circle cx="30" cy="-34" r="10" fill="var(--accent)"/>
+            <text x="30" y="-30.5" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="700" fill="var(--paper)" text-anchor="middle">B</text>
+            <line x1="21" y1="-27" x2="10" y2="-14" stroke="var(--accent)" stroke-width="1"/>
+
+            <!-- labels -->
+            <g font-family="JetBrains Mono, monospace" font-size="10" fill="currentColor" opacity="0.85">
+              <text x="-72" y="-60">крокв. 45×145,</text>
+              <text x="-72" y="-48">6 шт, крок 60°</text>
+              <text x="70" y="86">обрешітка</text>
+              <text x="70" y="98">25×50</text>
+            </g>
+
+            <!-- overhang dimension -->
+            <g stroke="currentColor" stroke-width="1">
+              <line x1="160" y1="12" x2="160" y2="30"/>
+              <line x1="195" y1="12" x2="195" y2="30"/>
+              <line x1="160" y1="24" x2="195" y2="24"/>
+            </g>
+            <rect x="162" y="28" width="32" height="15" fill="var(--paper-raised)"/>
+            <text x="178" y="39.5" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="currentColor">400</text>
+          </svg>
+        </figure>
+        <figcaption>Мал. A3.1 — план покрівлі, вигляд згори (обрешітка показана умовно, двома кільцями).</figcaption>
+      </div>
+
+      <div class="notes">
+        <div>
+          <h3>Опис</h3>
+          <ul>
+            <li>Кроквина 45×145 мм, довжина зі звисом ≈2600 мм</li>
+            <li>Хаб (центральний вузол) 150×150×300 мм</li>
+            <li>Обрешітка 25×50 мм з кроком ≈250 мм</li>
+            <li>Суцільна основа — плита ОСБ/фанера 18 мм під м'яку покрівлю</li>
+          </ul>
+        </div>
+        <div class="callout"><b>B</b><span>Вузол кроквяної системи — у збільшенні на аркуші A4</span></div>
+      </div>
+    </div>
+
+    <div class="titleblock">
+      <div class="tb-cell"><span class="tb-label">Проєкт</span><span class="tb-value">Альтанка «Стільник»</span></div>
+      <div class="tb-cell"><span class="tb-label">Аркуш</span><span class="tb-value">A3 / 6</span></div>
+      <div class="tb-cell"><span class="tb-label">Назва</span><span class="tb-value">План покрівлі</span></div>
+      <div class="tb-cell"><span class="tb-label">Масштаб</span><span class="tb-value">1 : 80</span></div>
+      <div class="tb-cell"><span class="tb-label">Дата</span><span class="tb-value">26.08.2026</span></div>
+    </div>
+  </section>
+
+  <!-- ============ A4 JOINERY DETAILS ============ -->
+  <section class="sheet" aria-labelledby="a4-title">
+    <div class="sheet-head">
+      <p class="eyebrow">Аркуш A4</p>
+      <h2 id="a4-title">Вузли з'єднань</h2>
+      <p class="lede">Два вузли у збільшеному масштабі — не за загальним масштабом аркушів A1–A3.</p>
+    </div>
+
+    <div class="sheet-body" style="grid-template-columns: 1fr 1fr;">
+      <div class="drawing-wrap">
+        <figure>
+          <svg viewBox="0 0 240 220" role="img" aria-label="Вузол А: з'єднання стійки 120 на 120 з верхньою обв'язкою 45 на 195 шипом-пазом, з кутовим підкосом і шпилькою">
+            <g stroke="currentColor" stroke-width="2" fill="var(--paper-raised)">
+              <rect x="95" y="60" width="42" height="130"/>
+              <rect x="40" y="30" width="160" height="34"/>
+            </g>
+            <!-- tenon/mortise hidden lines -->
+            <g stroke="currentColor" stroke-width="1.2" stroke-dasharray="3 3" fill="none">
+              <rect x="106" y="46" width="20" height="14"/>
+            </g>
+            <!-- knee brace -->
+            <polygon points="95,120 137,120 137,146 121,146" fill="var(--paper-raised)" stroke="currentColor" stroke-width="2"/>
+            <line x1="103" y1="128" x2="129" y2="138" stroke="currentColor" stroke-width="1"/>
+            <circle cx="103" cy="128" r="2.6" fill="currentColor"/>
+            <circle cx="129" cy="138" r="2.6" fill="currentColor"/>
+            <!-- bolt through plate/post -->
+            <circle cx="116" cy="47" r="3" fill="none" stroke="currentColor" stroke-width="1.4"/>
+            <line x1="112.5" y1="43.5" x2="119.5" y2="50.5" stroke="currentColor" stroke-width="1"/>
+            <line x1="119.5" y1="43.5" x2="112.5" y2="50.5" stroke="currentColor" stroke-width="1"/>
+
+            <g font-family="JetBrains Mono, monospace" font-size="10" fill="currentColor">
+              <line x1="200" y1="47" x2="215" y2="47" stroke="currentColor" stroke-width="1"/>
+              <text x="217" y="50">обв'язка 45×195</text>
+              <line x1="137" y1="125" x2="152" y2="125" stroke="currentColor" stroke-width="1"/>
+              <text x="154" y="128">підкіс 45×95</text>
+              <line x1="137" y1="95" x2="152" y2="95" stroke="currentColor" stroke-width="1"/>
+              <text x="154" y="98">шпилька Ø12</text>
+              <line x1="95" y1="150" x2="60" y2="150" stroke="currentColor" stroke-width="1"/>
+              <text x="10" y="153">стійка 120×120</text>
+              <line x1="106" y1="53" x2="70" y2="70" stroke="currentColor" stroke-width="1"/>
+              <text x="10" y="75">шип-паз</text>
+            </g>
+          </svg>
+        </figure>
+        <figcaption>Вузол A — стійка / верхня обв'язка (аркуші A1, A2).</figcaption>
+      </div>
+
+      <div class="drawing-wrap">
+        <figure>
+          <svg viewBox="0 0 240 220" role="img" aria-label="Вузол Б: шість крокв 45 на 145 запилом «пташиний дзьоб» кріпляться болтами до центрального хаба 150 на 150 на 300 міліметрів">
+            <g transform="translate(120,110)">
+              <polygon points="0,-22 19,-11 19,11 0,22 -19,11 -19,-11" fill="var(--paper-raised)" stroke="currentColor" stroke-width="2.2"/>
+              <g stroke="currentColor" stroke-width="2">
+                <line x1="0" y1="-22" x2="0" y2="-92"/>
+                <line x1="19" y1="-11" x2="72" y2="-46"/>
+                <line x1="19" y1="11" x2="72" y2="46"/>
+                <line x1="0" y1="22" x2="0" y2="92"/>
+                <line x1="-19" y1="11" x2="-72" y2="46"/>
+                <line x1="-19" y1="-11" x2="-72" y2="-46"/>
+              </g>
+              <g stroke="currentColor" stroke-width="1.4">
+                <path d="M -6 -20 l 6 8 l 6 -8" fill="none"/>
+              </g>
+              <g fill="currentColor">
+                <circle cx="0" cy="-30" r="2.6"/>
+                <circle cx="27" cy="-16" r="2.6"/>
+                <circle cx="27" cy="16" r="2.6"/>
+                <circle cx="0" cy="30" r="2.6"/>
+                <circle cx="-27" cy="16" r="2.6"/>
+                <circle cx="-27" cy="-16" r="2.6"/>
+              </g>
+            </g>
+            <g font-family="JetBrains Mono, monospace" font-size="10" fill="currentColor">
+              <line x1="120" y1="18" x2="120" y2="34" stroke="currentColor" stroke-width="1"/>
+              <text x="94" y="46">хаб 150×150×300</text>
+              <line x1="192" y1="64" x2="205" y2="58" stroke="currentColor" stroke-width="1"/>
+              <text x="150" y="20">крокв. 45×145</text>
+              <text x="150" y="200">запил «пташиний</text>
+              <text x="150" y="212">дзьоб» + болт М10</text>
+            </g>
+          </svg>
+        </figure>
+        <figcaption>Вузол Б — крокви / центральний хаб (аркуш A3, вигляд згори).</figcaption>
+      </div>
+    </div>
+
+    <div class="titleblock">
+      <div class="tb-cell"><span class="tb-label">Проєкт</span><span class="tb-value">Альтанка «Стільник»</span></div>
+      <div class="tb-cell"><span class="tb-label">Аркуш</span><span class="tb-value">A4 / 6</span></div>
+      <div class="tb-cell"><span class="tb-label">Назва</span><span class="tb-value">Вузли з'єднань</span></div>
+      <div class="tb-cell"><span class="tb-label">Масштаб</span><span class="tb-value">деталь, поза масштабом</span></div>
+      <div class="tb-cell"><span class="tb-label">Дата</span><span class="tb-value">26.08.2026</span></div>
+    </div>
+  </section>
+
+  <!-- ============ A5 BILL OF MATERIALS ============ -->
+  <section class="sheet" aria-labelledby="a5-title">
+    <div class="sheet-head">
+      <p class="eyebrow">Аркуш A5</p>
+      <h2 id="a5-title">Специфікація матеріалів</h2>
+      <p class="lede">Орієнтовний перелік пиломатеріалів, покрівлі та кріплення. Кількості — розрахункові, уточнюються за фактичним розкроєм.</p>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Елемент</th><th>Переріз / розмір</th><th>К-сть</th><th>Матеріал</th></tr>
+        </thead>
+        <tbody>
+          <tr class="group"><td colspan="4">Каркас та опори</td></tr>
+          <tr><td>Стійка кутова</td><td class="size">120×120×2300 мм</td><td class="qty">6 шт</td><td class="mat">модрина / сосна кл.4</td></tr>
+          <tr><td>Опора центральна</td><td class="size">100×100×500 мм</td><td class="qty">1 шт</td><td class="mat">модрина / сосна кл.4</td></tr>
+          <tr><td>Верхня обв'язка</td><td class="size">45×195×2000 мм</td><td class="qty">6 шт</td><td class="mat">модрина / сосна</td></tr>
+          <tr><td>Кутовий підкіс</td><td class="size">45×95×700 мм</td><td class="qty">12 шт</td><td class="mat">модрина / сосна</td></tr>
+
+          <tr class="group"><td colspan="4">Підлога</td></tr>
+          <tr><td>Балка радіальна</td><td class="size">45×195×2000 мм</td><td class="qty">6 шт</td><td class="mat">модрина / сосна</td></tr>
+          <tr><td>Лага підлоги</td><td class="size">45×145×~950 мм</td><td class="qty">≈34 шт</td><td class="mat">модрина / сосна</td></tr>
+          <tr><td>Дошка терасна шпунтована</td><td class="size">28×140 мм</td><td class="qty">≈12 м²</td><td class="mat">модрина / термоясен</td></tr>
+          <tr><td>Хаб-опора підлоги</td><td class="size">150×150×150 мм</td><td class="qty">1 шт</td><td class="mat">модрина / сосна</td></tr>
+
+          <tr class="group"><td colspan="4">Огородження</td></tr>
+          <tr><td>Поручень верхній</td><td class="size">45×70×2000 мм</td><td class="qty">6 шт</td><td class="mat">модрина / сосна</td></tr>
+          <tr><td>Поручень нижній</td><td class="size">45×70×2000 мм</td><td class="qty">6 шт</td><td class="mat">модрина / сосна</td></tr>
+          <tr><td>Балясина</td><td class="size">45×45×600 мм</td><td class="qty">60 шт</td><td class="mat">модрина / сосна</td></tr>
+
+          <tr class="group"><td colspan="4">Дах</td></tr>
+          <tr><td>Кроквина</td><td class="size">45×145×2600 мм</td><td class="qty">6 шт</td><td class="mat">модрина / сосна</td></tr>
+          <tr><td>Хаб покрівлі (центральний вузол)</td><td class="size">150×150×300 мм</td><td class="qty">1 шт</td><td class="mat">модрина / сосна, клеєний</td></tr>
+          <tr><td>Обрешітка</td><td class="size">25×50×~1900 мм</td><td class="qty">≈30 шт</td><td class="mat">сосна</td></tr>
+          <tr><td>Лобова дошка (карниз)</td><td class="size">45×195×2400 мм</td><td class="qty">6 шт</td><td class="mat">модрина / сосна</td></tr>
+          <tr><td>Суцільна основа даху</td><td class="size">фанера ФСФ 18 мм</td><td class="qty">≈14 м²</td><td class="mat">—</td></tr>
+          <tr><td>Гідроізоляційна мембрана</td><td class="size">—</td><td class="qty">≈16 м²</td><td class="mat">—</td></tr>
+          <tr><td>Покрівельне покриття</td><td class="size">бітумна / дерев'яна гонта</td><td class="qty">≈16 м²</td><td class="mat">з нахлестом</td></tr>
+          <tr><td>Шпиль вершини</td><td class="size">декоративний, точений</td><td class="qty">1 компл.</td><td class="mat">модрина</td></tr>
+
+          <tr class="group"><td colspan="4">Фундамент та кріплення</td></tr>
+          <tr><td>Бетонна подушка кутова</td><td class="size">400×400×400 мм</td><td class="qty">6 шт</td><td class="mat">бетон B15</td></tr>
+          <tr><td>Бетонна подушка центральна</td><td class="size">500×500×400 мм</td><td class="qty">1 шт</td><td class="mat">бетон B15</td></tr>
+          <tr><td>Анкер-кронштейн опори</td><td class="size">оцинкований</td><td class="qty">7 компл.</td><td class="mat">сталь оцинк.</td></tr>
+          <tr><td>Кутовий кронштейн крокви</td><td class="size">оцинкований</td><td class="qty">6 компл.</td><td class="mat">сталь оцинк.</td></tr>
+          <tr><td>Глухарі / шпильки М8–М12</td><td class="size">за розрахунком</td><td class="qty">компл.</td><td class="mat">сталь оцинк./нерж.</td></tr>
+
+          <tr class="group"><td colspan="4">Оздоблення</td></tr>
+          <tr><td>Антисептичне просочення</td><td class="size">клас 4</td><td class="qty">за нормою</td><td class="mat">—</td></tr>
+          <tr><td>Олія / лазур для дерева</td><td class="size">2 шари</td><td class="qty">≈15 л</td><td class="mat">УФ-стійка, зовнішня</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="footnote" style="text-align:left; padding-top:0;">Орієнтовний обсяг пиломатеріалу конструкції — ≈1,6–1,8 м³.</p>
+
+    <div class="titleblock">
+      <div class="tb-cell"><span class="tb-label">Проєкт</span><span class="tb-value">Альтанка «Стільник»</span></div>
+      <div class="tb-cell"><span class="tb-label">Аркуш</span><span class="tb-value">A5 / 6</span></div>
+      <div class="tb-cell"><span class="tb-label">Назва</span><span class="tb-value">Специфікація матеріалів</span></div>
+      <div class="tb-cell"><span class="tb-label">Масштаб</span><span class="tb-value">—</span></div>
+      <div class="tb-cell"><span class="tb-label">Дата</span><span class="tb-value">26.08.2026</span></div>
+    </div>
+  </section>
+
+  <!-- ============ A6 SKETCHES ============ -->
+  <section class="sheet" aria-labelledby="a6-title">
+    <div class="sheet-head">
+      <p class="eyebrow">Аркуш A6</p>
+      <h2 id="a6-title">Ескізи готового вигляду</h2>
+      <p class="lede">Довільний масштаб — ілюстрація того, як альтанка виглядатиме після завершення будівництва.</p>
+    </div>
+
+    <div class="sketch-grid">
+      <div class="sketch-card">
+        <svg viewBox="-190 -215 380 340" role="img" aria-label="Ескіз зовнішнього вигляду готової шестикутної альтанки з трьох чвертей: дерев'яний каркас, огородження з балясинами та шатровий дах із ґонтом">
+          <defs>
+            <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" style="stop-color:#bfe1ea"/>
+              <stop offset="1" style="stop-color:#eef4e4"/>
+            </linearGradient>
+            <radialGradient id="shadow" cx="0.5" cy="0.5" r="0.5">
+              <stop offset="0" style="stop-color:rgba(35,25,12,0.28)"/>
+              <stop offset="1" style="stop-color:rgba(35,25,12,0)"/>
+            </radialGradient>
+          </defs>
+          <rect x="-190" y="-215" width="380" height="340" fill="url(#sky)"/>
+          <ellipse cx="6" cy="78" rx="185" ry="42" fill="url(#shadow)"/>
+          <ellipse cx="-150" cy="55" rx="34" ry="20" fill="#5f8f4d"/>
+          <ellipse cx="-165" cy="65" rx="24" ry="15" fill="#4f7a45"/>
+          <ellipse cx="155" cy="30" rx="30" ry="18" fill="#5f8f4d"/>
+
+          <!-- roof faces -->
+          <polygon points="144.3,-137.3 105.7,-54.0 0.0,-175.6" fill="#9c6b3f" stroke="#4a2f1a" stroke-width="2"/>
+          <polygon points="105.7,-54.0 -38.7,-31.7 0.0,-175.6" fill="#8a5a34" stroke="#4a2f1a" stroke-width="2"/>
+          <polygon points="-38.7,-31.7 -144.3,-92.7 0.0,-175.6" fill="#6f4a2a" stroke="#4a2f1a" stroke-width="2"/>
+          <g stroke="#4a2f1a" stroke-width="1" opacity="0.55">
+            <line x1="101.0" y1="-148.8" x2="74.0" y2="-90.5"/>
+            <line x1="64.9" y1="-158.4" x2="47.5" y2="-120.9"/>
+            <line x1="28.9" y1="-167.9" x2="21.1" y2="-151.3"/>
+            <line x1="74.0" y1="-90.5" x2="-27.1" y2="-74.9"/>
+            <line x1="47.5" y1="-120.9" x2="-17.4" y2="-110.8"/>
+            <line x1="21.1" y1="-151.3" x2="-7.7" y2="-146.8"/>
+            <line x1="-27.1" y1="-74.9" x2="-101.0" y2="-117.6"/>
+            <line x1="-17.4" y1="-110.8" x2="-64.9" y2="-138.3"/>
+            <line x1="-7.7" y1="-146.8" x2="-28.9" y2="-159.0"/>
+          </g>
+          <!-- fascia -->
+          <g stroke="#3a2415" stroke-width="2.4">
+            <line x1="144.3" y1="-137.3" x2="105.7" y2="-54.0"/>
+            <line x1="105.7" y1="-54.0" x2="-38.7" y2="-31.7"/>
+            <line x1="-38.7" y1="-31.7" x2="-144.3" y2="-92.7"/>
+          </g>
+          <!-- finial -->
+          <line x1="0" y1="-175.6" x2="0" y2="-191.6" stroke="#3a2415" stroke-width="2"/>
+          <circle cx="0" cy="-194.5" r="3.4" fill="#3a2415"/>
+
+          <!-- walls -->
+          <polygon points="118.3,-40.8 86.6,27.5 86.6,-65.0 118.3,-133.3" fill="#c98a54" stroke="#4a2f1a" stroke-width="2"/>
+          <polygon points="86.6,27.5 -31.7,45.8 -31.7,-46.7 86.6,-65.0" fill="#a8703f" stroke="#4a2f1a" stroke-width="2"/>
+          <polygon points="-31.7,45.8 -118.3,-4.2 -118.3,-96.7 -31.7,-46.7" fill="#7d5330" stroke="#4a2f1a" stroke-width="2"/>
+          <g stroke="#3a2415" stroke-width="1" opacity="0.4">
+            <line x1="107.8" y1="-18.3" x2="107.8" y2="-110.8"/>
+            <line x1="97.4" y1="4.3" x2="97.4" y2="-88.2"/>
+            <line x1="47.6" y1="33.5" x2="47.6" y2="-59.0"/>
+            <line x1="8.5" y1="39.6" x2="8.5" y2="-52.9"/>
+            <line x1="-60.3" y1="29.3" x2="-60.3" y2="-63.2"/>
+            <line x1="-88.9" y1="12.8" x2="-88.9" y2="-79.7"/>
+          </g>
+
+          <!-- plinth -->
+          <polygon points="118.3,-18.3 86.6,50.0 86.6,27.5 118.3,-40.8" fill="#6f4a2a" stroke="#4a2f1a" stroke-width="1.6"/>
+          <polygon points="86.6,50.0 -31.7,68.3 -31.7,45.8 86.6,27.5" fill="#63401f" stroke="#4a2f1a" stroke-width="1.6"/>
+          <polygon points="-31.7,68.3 -118.3,18.3 -118.3,-4.2 -31.7,45.8" fill="#573619" stroke="#4a2f1a" stroke-width="1.6"/>
+
+          <!-- posts -->
+          <g stroke="#3a2415" stroke-width="4" stroke-linecap="square">
+            <line x1="118.3" y1="-40.8" x2="118.3" y2="-133.3"/>
+            <line x1="86.6" y1="27.5" x2="86.6" y2="-65.0"/>
+            <line x1="-31.7" y1="45.8" x2="-31.7" y2="-46.7"/>
+            <line x1="-118.3" y1="-4.2" x2="-118.3" y2="-96.7"/>
+          </g>
+
+          <!-- rails -->
+          <g stroke="#3a2415" stroke-width="2.6">
+            <line x1="118.3" y1="-85.8" x2="86.6" y2="-17.5"/>
+            <line x1="86.6" y1="-17.5" x2="-31.7" y2="0.8"/>
+            <line x1="-31.7" y1="0.8" x2="-118.3" y2="-49.2"/>
+            <line x1="118.3" y1="-55.8" x2="86.6" y2="12.5"/>
+            <line x1="86.6" y1="12.5" x2="-31.7" y2="30.8"/>
+            <line x1="-31.7" y1="30.8" x2="-118.3" y2="-19.2"/>
+          </g>
+          <g stroke="#3a2415" stroke-width="1.8">
+            <line x1="113.5" y1="-30.6" x2="113.5" y2="-75.6"/>
+            <line x1="108.2" y1="-18.9" x2="108.2" y2="-63.9"/>
+            <line x1="102.5" y1="-6.7" x2="102.5" y2="-51.7"/>
+            <line x1="96.7" y1="5.6" x2="96.7" y2="-39.4"/>
+            <line x1="91.4" y1="17.3" x2="91.4" y2="-27.7"/>
+            <line x1="68.9" y1="30.2" x2="68.9" y2="-14.8"/>
+            <line x1="48.7" y1="33.4" x2="48.7" y2="-11.6"/>
+            <line x1="27.5" y1="36.7" x2="27.5" y2="-8.3"/>
+            <line x1="6.2" y1="39.9" x2="6.2" y2="-5.1"/>
+            <line x1="-14.0" y1="43.1" x2="-14.0" y2="-1.9"/>
+            <line x1="-44.7" y1="38.3" x2="-44.7" y2="-6.7"/>
+            <line x1="-59.4" y1="29.8" x2="-59.4" y2="-15.2"/>
+            <line x1="-75.0" y1="20.8" x2="-75.0" y2="-24.2"/>
+            <line x1="-90.6" y1="11.8" x2="-90.6" y2="-33.2"/>
+            <line x1="-105.3" y1="3.3" x2="-105.3" y2="-41.7"/>
+          </g>
+
+          <!-- entry steps -->
+          <polygon points="8,45 48,45 40,60 0,60" fill="#8a5a34" stroke="#3a2415" stroke-width="1.6"/>
+          <polygon points="0,60 40,60 32,74 -8,74" fill="#7d5330" stroke="#3a2415" stroke-width="1.6"/>
+        </svg>
+        <p class="sketch-cap"><b>Ескіз 1.</b> Зовнішній вигляд, ракурс у три чверті — стійки, огородження та ґонтовий шатровий дах.</p>
+      </div>
+
+      <div class="sketch-card">
+        <svg viewBox="-175 -145 350 290" role="img" aria-label="Ескіз вигляду знизу на кроквяну систему даху: крокви радіально сходяться до центрального хаба">
+          <defs>
+            <radialGradient id="hub-glow" cx="0.5" cy="0.5" r="0.5">
+              <stop offset="0" style="stop-color:#f4dfae"/>
+              <stop offset="1" style="stop-color:#caa15e"/>
+            </radialGradient>
+          </defs>
+          <rect x="-175" y="-145" width="350" height="290" fill="#efe7d2"/>
+
+          <polygon points="150,0 75,58.5 -75,58.5 -150,0 -75,-58.5 75,-58.5" fill="#5e3c22"/>
+          <polygon points="150,0 75,58.5 0,0" fill="#7d5230"/>
+          <polygon points="75,58.5 -75,58.5 0,0" fill="#6a4529"/>
+          <polygon points="-75,58.5 -150,0 0,0" fill="#7d5230"/>
+          <polygon points="-150,0 -75,-58.5 0,0" fill="#6a4529"/>
+          <polygon points="-75,-58.5 75,-58.5 0,0" fill="#8a5a34"/>
+          <polygon points="75,-58.5 150,0 0,0" fill="#6a4529"/>
+
+          <polygon points="82.5,0 41.25,32.2 -41.25,32.2 -82.5,0 -41.25,-32.2 41.25,-32.2" fill="none" stroke="#3a2415" stroke-width="1.4" opacity="0.7"/>
+          <polygon points="45,0 22.5,17.6 -22.5,17.6 -45,0 -22.5,-17.6 22.5,-17.6" fill="none" stroke="#3a2415" stroke-width="1.2" opacity="0.6" stroke-dasharray="3 3"/>
+
+          <g stroke="#3a2415" stroke-width="2.6">
+            <line x1="150" y1="0" x2="0" y2="0"/>
+            <line x1="75" y1="58.5" x2="0" y2="0"/>
+            <line x1="-75" y1="58.5" x2="0" y2="0"/>
+            <line x1="-150" y1="0" x2="0" y2="0"/>
+            <line x1="-75" y1="-58.5" x2="0" y2="0"/>
+            <line x1="75" y1="-58.5" x2="0" y2="0"/>
+          </g>
+
+          <polygon points="150,0 75,58.5 -75,58.5 -150,0 -75,-58.5 75,-58.5" fill="none" stroke="#3a2415" stroke-width="2.2"/>
+          <circle cx="0" cy="0" r="20" fill="url(#hub-glow)" stroke="#3a2415" stroke-width="2.2"/>
+        </svg>
+        <p class="sketch-cap"><b>Ескіз 2.</b> Вигляд знизу на кроквяну систему — крокви сходяться до центрального хаба.</p>
+      </div>
+    </div>
+
+    <div class="titleblock">
+      <div class="tb-cell"><span class="tb-label">Проєкт</span><span class="tb-value">Альтанка «Стільник»</span></div>
+      <div class="tb-cell"><span class="tb-label">Аркуш</span><span class="tb-value">A6 / 6</span></div>
+      <div class="tb-cell"><span class="tb-label">Назва</span><span class="tb-value">Ескізи готового вигляду</span></div>
+      <div class="tb-cell"><span class="tb-label">Масштаб</span><span class="tb-value">ескіз, довільний</span></div>
+      <div class="tb-cell"><span class="tb-label">Дата</span><span class="tb-value">26.08.2026</span></div>
+    </div>
+  </section>
+
+  <p class="footnote">Комплект розроблено як довідковий проєкт для будівництва; перед реалізацією узгодьте перерізи навантажень і кріплення з місцевими будівельними нормами.</p>
+</div>
